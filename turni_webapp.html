@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1A1A2E">
+<title>Turni & Promemoria</title>
+<style>
+  :root {
+    --bg:      #1A1A2E;
+    --panel:   #16213E;
+    --cell:    #0F3460;
+    --accent:  #E94560;
+    --gold:    #F5A623;
+    --fg:      #E0E0E0;
+    --fg-dim:  #7A8BA0;
+    --today:   #FFD60A;
+    --prom:    #FF6B35;
+    --alleg:   #4CC9F0;
+    --verde:   #27AE60;
+    --mattino: #5B9BD5;
+    --pomerig: #2E8B57;
+    --notte:   #1C1C6E;
+    --riposo:  #6C757D;
+    --radius:  12px;
+    --shadow:  0 4px 24px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--panel);
+    padding: 12px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .topbar-nav { display: flex; align-items: center; gap: 8px; }
+  .nav-btn {
+    background: var(--cell);
+    color: var(--fg);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.15s;
+    touch-action: manipulation;
+  }
+  .nav-btn:active { background: #1a5a9e; }
+  .month-label {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold);
+    cursor: pointer;
+    text-align: center;
+    flex: 1;
+    padding: 0 8px;
+    letter-spacing: 0.5px;
+  }
+  .today-btn {
+    background: var(--today);
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+    white-space: nowrap;
+  }
+  .today-btn:active { filter: brightness(0.9); }
+
+  /* ── CALENDARIO ── */
+  .calendar-wrap { padding: 10px 8px; flex: 1; }
+
+  .day-headers {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-bottom: 3px;
+  }
+  .day-header {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 2px;
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--fg-dim);
+    letter-spacing: 0.5px;
+  }
+  .day-header.domenica { background: var(--accent); color: white; }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .day-cell {
+    border-radius: 8px;
+    padding: 6px 4px 4px;
+    min-height: 64px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    transition: filter 0.15s, transform 0.1s;
+    position: relative;
+    touch-action: manipulation;
+  }
+  .day-cell:active { filter: brightness(1.3); transform: scale(0.96); }
+  .day-cell.empty { background: transparent; cursor: default; }
+  .day-cell.today {
+    outline: 3px solid var(--today);
+    outline-offset: -2px;
+  }
+  .day-num {
+    font-size: 17px;
+    font-weight: 700;
+    color: white;
+    line-height: 1;
+  }
+  .turno-label {
+    font-size: 8px;
+    color: rgba(255,255,255,0.75);
+    text-align: center;
+    margin-top: 3px;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+  .badges {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+    font-size: 11px;
+  }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    background: var(--panel);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    position: sticky;
+    bottom: 0;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.4);
+  }
+  .bottom-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    color: var(--fg-dim);
+    font-size: 10px;
+    cursor: pointer;
+    padding: 6px 16px;
+    border-radius: 10px;
+    transition: color 0.15s, background 0.15s;
+    touch-action: manipulation;
+  }
+  .bottom-btn .icon { font-size: 22px; }
+  .bottom-btn:active, .bottom-btn.active { color: var(--gold); background: rgba(245,166,35,0.1); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--panel);
+    border-radius: var(--radius) var(--radius) 0 0;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90dvh;
+    overflow-y: auto;
+    padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--fg-dim);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .modal-header-colored {
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .modal-header-colored h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+  }
+  .modal-header-colored p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+    margin-top: 4px;
+  }
+
+  /* ── FORM ── */
+  label { font-size: 12px; color: var(--fg-dim); display: block; margin-bottom: 4px; margin-top: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  textarea, input[type=text], input[type=number] {
+    width: 100%;
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+    resize: none;
+  }
+  textarea:focus, input:focus { border-color: var(--accent); }
+
+  .radio-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .radio-btn {
+    background: var(--bg);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--fg);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    touch-action: manipulation;
+  }
+  .radio-btn.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    font-weight: 700;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: filter 0.15s;
+    touch-action: manipulation;
+    font-family: inherit;
+  }
+  .btn:active { filter: brightness(0.85); }
+  .btn-accent  { background: var(--accent); color: white; }
+  .btn-verde   { background: var(--verde);  color: white; }
+  .btn-gold    { background: var(--gold);   color: #111; }
+  .btn-cell    { background: var(--cell);   color: white; }
+  .btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+    font-family: inherit;
+  }
+  .btn-sm:active { filter: brightness(0.85); }
+
+  /* ── PROMEMORIA LIST ── */
+  .prom-item {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .prom-text { flex: 1; font-size: 14px; line-height: 1.5; }
+  .prom-badge {
+    font-size: 11px;
+    color: var(--prom);
+    margin-top: 4px;
+  }
+  .prom-actions { display: flex; gap: 6px; flex-shrink: 0; margin-top: 2px; }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 16px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .empty-msg {
+    text-align: center;
+    color: var(--fg-dim);
+    font-size: 13px;
+    padding: 16px;
+    background: var(--bg);
+    border-radius: 10px;
+  }
+
+  /* ── AVVISI ── */
+  .avviso-item {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-left: 4px solid var(--prom);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .avviso-item.ritardo { border-left-color: var(--accent); }
+  .avviso-item.oggi    { border-left-color: var(--today); }
+
+  /* ── RICERCA ── */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 12px;
+  }
+  .search-wrap input {
+    padding-left: 36px;
+  }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--fg-dim);
+    font-size: 16px;
+    pointer-events: none;
+  }
+
+  /* ── NAVIGAZIONE MESE POPUP ── */
+  .month-picker {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .month-pick-btn {
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+    touch-action: manipulation;
+  }
+  .month-pick-btn.selected { background: var(--accent); color: white; border-color: var(--accent); font-weight: 700; }
+  .month-pick-btn:active { filter: brightness(0.85); }
+
+  .year-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 8px;
+  }
+  .year-nav {
+    background: var(--cell);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 18px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .year-display {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    min-width: 80px;
+    text-align: center;
+  }
+
+  /* ── LEGENDA ── */
+  .legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--panel);
+  }
+  .legenda-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--fg-dim);
+  }
+  .legenda-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--cell); border-radius: 2px; }
+
+  @media (min-width: 480px) {
+    .modal { border-radius: var(--radius); margin: 20px; max-height: 85dvh; }
+    .modal-overlay { align-items: center; }
+    .day-cell { min-height: 80px; }
+    .day-num  { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-nav">
+    <button class="nav-btn" onclick="cambiaMs(-1)">◀</button>
+  </div>
+  <div class="month-label" onclick="apriPickerMese()" id="lblMese">—</div>
+  <div class="topbar-nav">
+    <button class="nav-btn" onclick="cambiaMs(1)">▶</button>
+    <button class="today-btn" onclick="vaiOggi()">🏠 Oggi</button>
+  </div>
+</div>
+
+<!-- CALENDARIO -->
+<div class="calendar-wrap">
+  <div class="day-headers">
+    <div class="day-header">Lun</div>
+    <div class="day-header">Mar</div>
+    <div class="day-header">Mer</div>
+    <div class="day-header">Gio</div>
+    <div class="day-header">Ven</div>
+    <div class="day-header">Sab</div>
+    <div class="day-header domenica">Dom</div>
+  </div>
+  <div class="calendar-grid" id="calGrid"></div>
+</div>
+
+<!-- LEGENDA -->
+<div class="legenda">
+  <div class="legenda-item"><div class="legenda-dot" style="background:#5B9BD5"></div>Mattino</div>
+  <div class="legenda-item"><div class="legenda-dot" style="background:#2E8B57"></div>Pomeriggio</div>
+  <div class="legenda-item"><div class="legenda-dot" style="background:#1C1C6E"></div>Notte</div>
+  <div class="legenda-item"><div class="legenda-dot" style="background:#6C757D"></div>Riposo</div>
+  <div class="legenda-item">📌 Promemoria</div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="bottom-btn" onclick="apriListaPromemoria()">
+    <span class="icon">📋</span>
+    <span>Tutti</span>
+  </button>
+  <button class="bottom-btn" onclick="controllaAvvisi(true)">
+    <span class="icon">🔔</span>
+    <span>Avvisi</span>
+  </button>
+  <button class="bottom-btn" onclick="esportaDati()">
+    <span class="icon">💾</span>
+    <span>Esporta</span>
+  </button>
+  <button class="bottom-btn" onclick="importaDati()">
+    <span class="icon">📥</span>
+    <span>Importa</span>
+  </button>
+</div>
+
+<!-- ══ MODAL DETTAGLI GIORNO ══ -->
+<div class="modal-overlay" id="modalGiorno">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header-colored" id="giornoHeader"></div>
+
+    <div class="section-title">📝 PROMEMORIA</div>
+    <div id="listaProm"></div>
+    <button class="btn btn-verde" onclick="apriNuovoProm()">➕ Aggiungi Promemoria</button>
+    <button class="btn btn-cell" onclick="chiudiModal('modalGiorno')" style="margin-top:6px">Chiudi</button>
+  </div>
+</div>
+
+<!-- ══ MODAL NUOVO/MODIFICA PROMEMORIA ══ -->
+<div class="modal-overlay" id="modalProm">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="promModalTitolo">➕ Nuovo Promemoria</div>
+
+    <label>Testo</label>
+    <textarea id="promTesto" rows="4" placeholder="Descrivi il promemoria..."></textarea>
+
+    <label>Ricordamelo</label>
+    <div class="radio-group" id="anticipoGroup">
+      <div class="radio-btn selected" data-val="0">Solo il giorno</div>
+      <div class="radio-btn" data-val="2">Ogni giorno per 2gg</div>
+      <div class="radio-btn" data-val="5">Ogni giorno per 5gg</div>
+      <div class="radio-btn" data-val="10">Ogni giorno per 10gg</div>
+    </div>
+
+    <label>Personalizzato (giorni prima)</label>
+    <input type="number" id="anticipoCustom" min="0" max="365" placeholder="es. 7">
+
+    <button class="btn btn-verde" onclick="salvaProm()">💾 Salva</button>
+    <button class="btn btn-accent" onclick="chiudiModal('modalProm')" style="margin-top:6px">Annulla</button>
+  </div>
+</div>
+
+<!-- ══ MODAL LISTA TUTTI PROMEMORIA ══ -->
+<div class="modal-overlay" id="modalLista">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📋 Tutti i Promemoria</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Cerca promemoria..." oninput="filtraPromemoria()">
+    </div>
+    <div id="listaPromAll"></div>
+    <button class="btn btn-accent" onclick="chiudiModal('modalLista')" style="margin-top:12px">Chiudi</button>
+  </div>
+</div>
+
+<!-- ══ MODAL AVVISI ══ -->
+<div class="modal-overlay" id="modalAvvisi">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⏰ Promemoria in attesa</div>
+    <div id="listaAvvisi"></div>
+    <button class="btn btn-accent" onclick="chiudiModal('modalAvvisi')" style="margin-top:12px">OK – Ho capito</button>
+  </div>
+</div>
+
+<!-- ══ MODAL PICKER MESE ══ -->
+<div class="modal-overlay" id="modalMese">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📅 Vai al mese</div>
+    <div class="year-row">
+      <button class="year-nav" onclick="cambiaAnnoP(-1)">◀</button>
+      <div class="year-display" id="pickerAnno">2026</div>
+      <button class="year-nav" onclick="cambiaAnnoP(1)">▶</button>
+    </div>
+    <div class="month-picker" id="monthPickerGrid"></div>
+    <button class="btn btn-accent" onclick="chiudiModal('modalMese')">Annulla</button>
+  </div>
+</div>
+
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="leggiImport(event)">
+
+<script>
+// ══════════════════════════════════════════════
+//  COSTANTI TURNI
+// ══════════════════════════════════════════════
+const CICLO = {
+  0:'MATTINO 1°',1:'MATTINO 2°',2:'MATTINO 3°',
+  3:'RIPOSO 1°', 4:'RIPOSO 2°', 5:'NOTTE 1ª',
+  6:'NOTTE 2ª',  7:'NOTTE 3ª',  8:'RIPOSO 1°',
+  9:'RIPOSO 2°',10:'POMERIGGIO 1°',11:'POMERIGGIO 2°',
+ 12:'POMERIGGIO 3°',13:'RIPOSO 1°',14:'RIPOSO 2°',
+};
+
+const ECCEZIONI = {
+  '2024-8-1':'MATTINO EXTRA','2024-8-2':'RIPOSO 1°','2024-8-3':'RIPOSO 2°',
+  '2024-8-4':'RIPOSO EXTRA','2024-8-5':'NOTTE 1ª','2024-8-6':'NOTTE 2ª',
+  '2024-8-7':'NOTTE 3ª','2024-8-8':'RIPOSO 1°','2024-8-9':'RIPOSO 2°',
+  '2024-8-10':'POMERIGGIO 1°','2024-8-11':'POMERIGGIO 2°','2024-8-12':'POMERIGGIO 3°',
+  '2024-8-13':'RIPOSO 1°','2024-8-14':'RIPOSO 2°',
+  '2025-7-29':'RIPOSO 1°','2025-7-30':'RIPOSO 2°','2025-7-31':'RIPOSO EXTRA',
+  '2025-8-3':'NOTTE 3ª','2025-8-5':'RIPOSO 2°','2025-8-8':'POMERIGGIO 3°',
+  '2025-8-10':'RIPOSO 2°',
+  '2026-7-30':'NOTTE EXTRA','2026-7-31':'RIPOSO 1°','2026-8-1':'RIPOSO 2°',
+  '2026-8-2':'POMERIGGIO 1°','2026-8-3':'POMERIGGIO 2°','2026-8-4':'POMERIGGIO 3°',
+  '2026-8-5':'RIPOSO 1°','2026-8-6':'RIPOSO 2°',
+};
+
+const DATA_INIZIO       = new Date(2024,0,1);
+const DATA_RIPRESA_2024 = new Date(2024,7,15);
+const DATA_RIPRESA_2025 = new Date(2025,7,11);
+const DATA_RIPRESA_2026 = new Date(2026,7,7);
+
+const COLORI = {
+  'MATTINO':'#5B9BD5','RIPOSO':'#6C757D','NOTTE':'#1C1C6E',
+  'POMERIGGIO':'#2E8B57','MATTINO EXTRA':'#D4A017',
+  'RIPOSO EXTRA':'#C0406A','NOTTE EXTRA':'#7D3C98',
+};
+
+const MESI_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+                 'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+function dateToOrdinal(d) {
+  // days since epoch
+  return Math.floor(d.getTime() / 86400000);
+}
+
+function getTurno(y, m, d) {
+  const key = `${y}-${m}-${d}`;
+  if (ECCEZIONI[key]) return ECCEZIONI[key];
+  const data = new Date(y, m-1, d);
+  let base, ref;
+  if (data >= DATA_RIPRESA_2026)      ref = DATA_RIPRESA_2026;
+  else if (data >= DATA_RIPRESA_2025) ref = DATA_RIPRESA_2025;
+  else if (data >= DATA_RIPRESA_2024) ref = DATA_RIPRESA_2024;
+  else                                ref = DATA_INIZIO;
+  const diff = Math.round((data - ref) / 86400000);
+  return CICLO[((diff % 15) + 15) % 15];
+}
+
+function coloreTurno(turno) {
+  for (const [k, v] of Object.entries(COLORI)) {
+    if (turno.startsWith(k)) return v;
+  }
+  return '#3A3A3C';
+}
+
+function isDark(hex) {
+  const h = hex.replace('#','');
+  const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+  return (0.299*r + 0.587*g + 0.114*b) < 128;
+}
+
+// ══════════════════════════════════════════════
+//  STATO
+// ══════════════════════════════════════════════
+const stato = {
+  mese: null, anno: null,
+  promemoria: {}, // {"2026-6-14": [{testo, anticipo, data_creazione}]}
+  giornoSelezionato: null,
+  promEditIdx: null,
+  anticipoSelezionato: 0,
+  pickerAnno: new Date().getFullYear(),
+};
+
+function chiaveData(y,m,d) { return `${y}-${m}-${d}`; }
+
+// ══════════════════════════════════════════════
+//  PERSISTENZA  (localStorage)
+// ══════════════════════════════════════════════
+function salva() {
+  localStorage.setItem('turni_prom', JSON.stringify(stato.promemoria));
+  localStorage.setItem('turni_ultimo', new Date().toISOString().slice(0,10));
+}
+
+function carica() {
+  const raw = localStorage.getItem('turni_prom');
+  if (raw) {
+    try { stato.promemoria = JSON.parse(raw); } catch(e) {}
+  }
+}
+
+// ══════════════════════════════════════════════
+//  CALENDARIO
+// ══════════════════════════════════════════════
+function creaCalendario(mese, anno) {
+  stato.mese = mese;
+  stato.anno = anno;
+
+  const nomeM = MESI_IT[mese-1].toUpperCase() + ' ' + anno;
+  document.getElementById('lblMese').textContent = nomeM;
+  document.title = 'Turni ' + nomeM;
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  const oggi = new Date();
+  const oggiStr = chiaveData(oggi.getFullYear(), oggi.getMonth()+1, oggi.getDate());
+
+  // primo giorno del mese (0=dom, 1=lun…)
+  let primoGiorno = new Date(anno, mese-1, 1).getDay();
+  primoGiorno = (primoGiorno === 0) ? 6 : primoGiorno - 1; // converti in lun=0
+
+  const giorniMese = new Date(anno, mese, 0).getDate();
+
+  // celle vuote iniziali
+  for (let i = 0; i < primoGiorno; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'day-cell empty';
+    grid.appendChild(empty);
+  }
+
+  for (let g = 1; g <= giorniMese; g++) {
+    const turno = getTurno(anno, mese, g);
+    const bg    = coloreTurno(turno);
+    const key   = chiaveData(anno, mese, g);
+    const nProm = (stato.promemoria[key] || []).length;
+    const isOggi = key === oggiStr;
+
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (isOggi ? ' today' : '');
+    cell.style.background = bg;
+    cell.onclick = () => apriGiorno(anno, mese, g);
+
+    cell.innerHTML = `
+      <div class="day-num">${g}</div>
+      <div class="turno-label">${turno}</div>
+      ${nProm > 0 ? `<div class="badges"><span>📌</span>${nProm > 1 ? `<span style="font-size:9px;color:rgba(255,255,255,0.8)">${nProm}</span>` : ''}</div>` : ''}
+    `;
+
+    grid.appendChild(cell);
+  }
+}
+
+function cambiaMs(delta) {
+  let m = stato.mese + delta, a = stato.anno;
+  if (m > 12) { m = 1;  a++; }
+  if (m < 1)  { m = 12; a--; }
+  creaCalendario(m, a);
+}
+
+function vaiOggi() {
+  const d = new Date();
+  creaCalendario(d.getMonth()+1, d.getFullYear());
+}
+
+// ══════════════════════════════════════════════
+//  PICKER MESE
+// ══════════════════════════════════════════════
+function apriPickerMese() {
+  stato.pickerAnno = stato.anno;
+  document.getElementById('pickerAnno').textContent = stato.pickerAnno;
+  const grid = document.getElementById('monthPickerGrid');
+  grid.innerHTML = '';
+  MESI_IT.forEach((nm, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'month-pick-btn' + (i+1 === stato.mese ? ' selected' : '');
+    btn.textContent = nm.slice(0,3);
+    btn.onclick = () => {
+      creaCalendario(i+1, stato.pickerAnno);
+      chiudiModal('modalMese');
+    };
+    grid.appendChild(btn);
+  });
+  apriModal('modalMese');
+}
+
+function cambiaAnnoP(delta) {
+  stato.pickerAnno += delta;
+  document.getElementById('pickerAnno').textContent = stato.pickerAnno;
+}
+
+// ══════════════════════════════════════════════
+//  MODALE GIORNO
+// ══════════════════════════════════════════════
+function apriGiorno(y, m, d) {
+  stato.giornoSelezionato = {y, m, d};
+  const turno = getTurno(y, m, d);
+  const bg    = coloreTurno(turno);
+  const data  = new Date(y, m-1, d);
+  const gg    = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const hdr   = document.getElementById('giornoHeader');
+  hdr.style.background = bg;
+  hdr.innerHTML = `
+    <h2>${gg[data.getDay()]} ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}</h2>
+    <p>🔹 ${turno}</p>
+  `;
+  aggiornaListaProm();
+  apriModal('modalGiorno');
+}
+
+function aggiornaListaProm() {
+  const {y, m, d} = stato.giornoSelezionato;
+  const key  = chiaveData(y, m, d);
+  const list = stato.promemoria[key] || [];
+  const div  = document.getElementById('listaProm');
+
+  if (list.length === 0) {
+    div.innerHTML = '<div class="empty-msg">Nessun promemoria per questo giorno</div>';
+    return;
+  }
+
+  div.innerHTML = list.map((p, i) => {
+    const ant = p.anticipo || 0;
+    const badge = ant > 0 ? `<div class="prom-badge">🔔 Ogni giorno per ${ant}gg prima</div>` : '';
+    return `
+      <div class="prom-item">
+        <div style="flex:1">
+          <div class="prom-text">${escHtml(p.testo)}</div>
+          ${badge}
+        </div>
+        <div class="prom-actions">
+          <button class="btn-sm" style="background:var(--gold);color:#111" onclick="apriModificaProm(${i})">✏️</button>
+          <button class="btn-sm" style="background:var(--accent);color:white" onclick="eliminaProm(${i})">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  MODAL PROMEMORIA
+// ══════════════════════════════════════════════
+function apriNuovoProm() {
+  stato.promEditIdx = null;
+  document.getElementById('promModalTitolo').textContent = '➕ Nuovo Promemoria';
+  document.getElementById('promTesto').value = '';
+  document.getElementById('anticipoCustom').value = '';
+  setAnticipo(0);
+  apriModal('modalProm');
+}
+
+function apriModificaProm(idx) {
+  const {y, m, d} = stato.giornoSelezionato;
+  const p = stato.promemoria[chiaveData(y,m,d)][idx];
+  stato.promEditIdx = idx;
+  document.getElementById('promModalTitolo').textContent = '✏️ Modifica Promemoria';
+  document.getElementById('promTesto').value = p.testo;
+  document.getElementById('anticipoCustom').value = '';
+  setAnticipo(p.anticipo || 0);
+  apriModal('modalProm');
+}
+
+function setAnticipo(val) {
+  stato.anticipoSelezionato = val;
+  document.querySelectorAll('#anticipoGroup .radio-btn').forEach(b => {
+    b.classList.toggle('selected', parseInt(b.dataset.val) === val);
+  });
+}
+
+document.querySelectorAll('#anticipoGroup .radio-btn').forEach(b => {
+  b.onclick = () => setAnticipo(parseInt(b.dataset.val));
+});
+
+document.getElementById('anticipoCustom').onchange = function() {
+  const v = parseInt(this.value);
+  if (!isNaN(v) && v >= 0) setAnticipo(v);
+};
+
+function salvaProm() {
+  const testo = document.getElementById('promTesto').value.trim();
+  if (!testo) { alert('Inserisci un testo!'); return; }
+
+  const {y, m, d} = stato.giornoSelezionato;
+  const key = chiaveData(y, m, d);
+  if (!stato.promemoria[key]) stato.promemoria[key] = [];
+
+  const entry = {
+    testo,
+    anticipo: stato.anticipoSelezionato,
+    data_creazione: new Date().toISOString().slice(0,19).replace('T',' '),
+  };
+
+  if (stato.promEditIdx !== null) {
+    stato.promemoria[key][stato.promEditIdx] = entry;
+  } else {
+    stato.promemoria[key].push(entry);
+  }
+
+  salva();
+  chiudiModal('modalProm');
+  aggiornaListaProm();
+  creaCalendario(stato.mese, stato.anno); // aggiorna badge
+}
+
+function eliminaProm(idx) {
+  if (!confirm('Eliminare questo promemoria?')) return;
+  const {y, m, d} = stato.giornoSelezionato;
+  const key = chiaveData(y, m, d);
+  stato.promemoria[key].splice(idx, 1);
+  if (stato.promemoria[key].length === 0) delete stato.promemoria[key];
+  salva();
+  aggiornaListaProm();
+  creaCalendario(stato.mese, stato.anno);
+}
+
+// ══════════════════════════════════════════════
+//  LISTA TUTTI PROMEMORIA
+// ══════════════════════════════════════════════
+function apriListaPromemoria() {
+  document.getElementById('searchInput').value = '';
+  filtraPromemoria('');
+  apriModal('modalLista');
+}
+
+function filtraPromemoria() {
+  const filtro = document.getElementById('searchInput').value.toLowerCase();
+  const div = document.getElementById('listaPromAll');
+  const entries = Object.entries(stato.promemoria).sort();
+
+  if (entries.length === 0) {
+    div.innerHTML = '<div class="empty-msg">Nessun promemoria salvato</div>';
+    return;
+  }
+
+  let html = '';
+  entries.forEach(([key, lista]) => {
+    const [y,m,d] = key.split('-');
+    lista.forEach((p, i) => {
+      const ant  = p.anticipo || 0;
+      const voce = `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}  ${p.testo}`;
+      if (filtro && !voce.toLowerCase().includes(filtro)) return;
+      html += `
+        <div class="prom-item">
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--fg-dim);margin-bottom:3px">${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}</div>
+            <div class="prom-text">${escHtml(p.testo)}</div>
+            ${ant > 0 ? `<div class="prom-badge">🔔 ${ant}gg prima</div>` : ''}
+          </div>
+        </div>`;
+    });
+  });
+
+  div.innerHTML = html || '<div class="empty-msg">Nessun risultato</div>';
+}
+
+// ══════════════════════════════════════════════
+//  AVVISI
+// ══════════════════════════════════════════════
+function controllaAvvisi(mostraSempre = false) {
+  const oggi = new Date();
+  oggi.setHours(0,0,0,0);
+  const ultimoStr = localStorage.getItem('turni_ultimo');
+  const ultimo = ultimoStr ? new Date(ultimoStr) : new Date(oggi.getTime() - 7*86400000);
+  ultimo.setHours(0,0,0,0);
+
+  const avvisi = [];
+  const visti  = new Set();
+
+  let cur = new Date(ultimo.getTime() + 86400000); // giorno dopo l'ultimo
+  if (cur > oggi) cur = new Date(oggi);
+
+  while (cur <= oggi) {
+    Object.entries(stato.promemoria).forEach(([key, lista]) => {
+      const [ky, km, kd] = key.split('-').map(Number);
+      const dataEvento = new Date(ky, km-1, kd);
+      dataEvento.setHours(0,0,0,0);
+      const giorniMancanti = Math.round((dataEvento - cur) / 86400000);
+
+      lista.forEach((p, idx) => {
+        const ant    = p.anticipo || 0;
+        const chiave = `${key}-${p.testo}-${ant}-${idx}`;
+        if (visti.has(chiave)) return;
+        const scatta = (ant === 0 && cur.getTime() === dataEvento.getTime()) ||
+                       (ant > 0  && giorniMancanti >= 0 && giorniMancanti <= ant);
+        if (scatta) {
+          const inRitardo = dataEvento < oggi;
+          avvisi.push({dataEvento, testo: p.testo, anticipo: ant, inRitardo});
+          visti.add(chiave);
+        }
+      });
+    });
+    cur = new Date(cur.getTime() + 86400000);
+  }
+
+  localStorage.setItem('turni_ultimo', oggi.toISOString().slice(0,10));
+
+  if (avvisi.length === 0) {
+    if (mostraSempre) {
+      const div = document.getElementById('listaAvvisi');
+      div.innerHTML = '<div class="empty-msg">✅ Nessun promemoria in attesa</div>';
+      apriModal('modalAvvisi');
+    }
+    return;
+  }
+
+  const oggi2 = new Date(); oggi2.setHours(0,0,0,0);
+  const div = document.getElementById('listaAvvisi');
+  div.innerHTML = avvisi.map(a => {
+    const ds = `${String(a.dataEvento.getDate()).padStart(2,'0')}/${String(a.dataEvento.getMonth()+1).padStart(2,'0')}/${a.dataEvento.getFullYear()}`;
+    const giorniMancanti = Math.round((a.dataEvento - oggi2) / 86400000);
+    let cls = '', testo = '';
+    if (a.inRitardo) {
+      cls = 'ritardo';
+      testo = `⚠️ <strong>SCADUTO</strong> (${ds}) – ${escHtml(a.testo)}`;
+    } else if (giorniMancanti === 0) {
+      cls = 'oggi';
+      testo = `📌 <strong>OGGI</strong> (${ds}) – ${escHtml(a.testo)}`;
+    } else {
+      testo = `🔔 <strong>Tra ${giorniMancanti}gg</strong> (${ds}) – ${escHtml(a.testo)}`;
+    }
+    return `<div class="avviso-item ${cls}">${testo}</div>`;
+  }).join('');
+
+  apriModal('modalAvvisi');
+}
+
+// ══════════════════════════════════════════════
+//  ESPORTA / IMPORTA JSON
+// ══════════════════════════════════════════════
+function esportaDati() {
+  const blob = new Blob([JSON.stringify(stato.promemoria, null, 2)], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `backup_turni_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importaDati() {
+  document.getElementById('importFile').click();
+}
+
+function leggiImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (confirm(`Importare ${Object.keys(data).length} voci? I dati attuali verranno uniti.`)) {
+        Object.assign(stato.promemoria, data);
+        salva();
+        creaCalendario(stato.mese, stato.anno);
+        alert('✅ Dati importati con successo!');
+      }
+    } catch(err) {
+      alert('❌ File non valido.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ══════════════════════════════════════════════
+//  UTILITÀ
+// ══════════════════════════════════════════════
+function apriModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function chiudiModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Chiudi modal toccando overlay
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ══════════════════════════════════════════════
+//  AVVIO
+// ══════════════════════════════════════════════
+carica();
+const adesso = new Date();
+creaCalendario(adesso.getMonth()+1, adesso.getFullYear());
+setTimeout(() => controllaAvvisi(false), 1500);
+</script>
+</body>
+</html>
