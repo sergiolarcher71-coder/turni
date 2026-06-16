@@ -693,7 +693,16 @@ function salva() {
 function carica() {
   const raw = localStorage.getItem('turni_prom');
   if (raw) {
-    try { stato.promemoria = JSON.parse(raw); } catch(e) {}
+    try {
+      const data = JSON.parse(raw);
+      // Normalizza chiavi: "2026-06-16" → "2026-6-16"
+      const normalizzato = {};
+      Object.entries(data).forEach(([key, val]) => {
+        const [y, m, d] = key.split('-').map(Number);
+        normalizzato[`${y}-${m}-${d}`] = val;
+      });
+      stato.promemoria = normalizzato;
+    } catch(e) {}
   }
 }
 
@@ -1046,7 +1055,12 @@ function leggiImport(event) {
     try {
       const data = JSON.parse(e.target.result);
       if (confirm(`Importare ${Object.keys(data).length} voci? I dati attuali verranno uniti.`)) {
-        Object.assign(stato.promemoria, data);
+        const normalizzato = {};
+Object.entries(data).forEach(([key, val]) => {
+  const [y, m, d] = key.split('-').map(Number);
+  normalizzato[`${y}-${m}-${d}`] = val;
+});
+Object.assign(stato.promemoria, normalizzato);
         salva();
         creaCalendario(stato.mese, stato.anno);
         alert('✅ Dati importati con successo!');
