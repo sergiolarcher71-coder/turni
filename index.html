@@ -750,8 +750,8 @@ function creaCalendario(mese, anno) {
 
     cell.innerHTML = `
       <div class="day-num">${g}</div>
-      <div class="turno-label">${turno}</div>
-      ${nProm > 0 ? `<div class="badges"><span>📌</span>${nProm > 1 ? `<span style="font-size:9px;color:rgba(255,255,255,0.8)">${nProm}</span>` : ''}</div>` : ''}
+      <div class="turno-label"></div>
+      ${nProm > 0 ? `<div class="badges"><span style="font-size:20px">📌</span>${nProm > 1 ? `<span style="font-size:9px;color:rgba(255,255,255,0.8)">${nProm}</span>` : ''}</div>` : ''}
     `;
 
     grid.appendChild(cell);
