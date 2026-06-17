@@ -1100,6 +1100,22 @@ carica();
 const adesso = new Date();
 creaCalendario(adesso.getMonth()+1, adesso.getFullYear());
 setTimeout(() => controllaAvvisi(false), 1500);
+  // ══ SWIPE MESI ══
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+}, {passive: true});
+
+document.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].screenX;
+  const diff = touchStartX - touchEndX;
+  if (Math.abs(diff) > 50) {  // minimo 50px di swipe
+    if (diff > 0) cambiaMs(1);  // swipe sinistra → mese successivo
+    else cambiaMs(-1);           // swipe destra → mese precedente
+  }
+}, {passive: true});
 </script>
 </body>
 </html>
