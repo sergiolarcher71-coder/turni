@@ -1130,20 +1130,75 @@ carica();
 const adesso = new Date();
 creaCalendario(adesso.getMonth()+1, adesso.getFullYear());
 setTimeout(() => controllaAvvisi(false), 1500);
-  // ══ SWIPE MESI ══
+// ══ SWIPE MESI CON TRASCINAMENTO ══
 let touchStartX = 0;
-let touchEndX = 0;
+let touchCurrentX = 0;
+let isDragging = false;
 
 document.addEventListener('touchstart', e => {
+  // Ignora se tocco dentro un modal aperto
+  if (document.querySelector('.modal-overlay.open')) return;
   touchStartX = e.changedTouches[0].screenX;
+  touchCurrentX = touchStartX;
+  isDragging = true;
+}, {passive: true});
+
+document.addEventListener('touchmove', e => {
+  if (!isDragging) return;
+  if (document.querySelector('.modal-overlay.open')) return;
+  touchCurrentX = e.changedTouches[0].screenX;
+  const diff = touchCurrentX - touchStartX;
+  // Trascina il calendario col dito
+  const grid = document.getElementById('calGrid');
+  grid.style.transform = `translateX(${diff * 0.4}px)`;
+  grid.style.opacity = `${1 - Math.abs(diff) / 800}`;
 }, {passive: true});
 
 document.addEventListener('touchend', e => {
-  touchEndX = e.changedTouches[0].screenX;
-  const diff = touchStartX - touchEndX;
-  if (Math.abs(diff) > 50) {  // minimo 50px di swipe
-    if (diff > 0) cambiaMs(1);  // swipe sinistra → mese successivo
-    else cambiaMs(-1);           // swipe destra → mese precedente
+  if (!isDragging) return;
+  isDragging = false;
+  const grid = document.getElementById('calGrid');
+  const diff = touchStartX - touchCurrentX;
+
+  if (Math.abs(diff) > 60) {
+    // Swipe confermato — anima uscita e cambia mese
+    const direzione = diff > 0 ? 1 : -1;
+    grid.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+    grid.style.transform = `translateX(${direzione * -400}px)`;
+    grid.style.opacity = '0';
+
+    setTimeout(() => {
+      grid.style.transition = 'none';
+      grid.style.transform = 'translateX(0)';
+      grid.style.opacity = '1';
+      cambiaMs(direzione);
+
+      // Entra dal lato opposto
+      const entrata = direzione > 0 ? '400px' : '-400px';
+      grid.style.transform = `translateX(${entrata})`;
+      grid.style.opacity = '0';
+      void grid.offsetWidth;
+      grid.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+      grid.style.transform = 'translateX(0)';
+      grid.style.opacity = '1';
+
+      setTimeout(() => {
+        grid.style.transition = '';
+        grid.style.transform = '';
+        grid.style.opacity = '';
+      }, 250);
+    }, 200);
+
+  } else {
+    // Swipe troppo corto — torna alla posizione originale
+    grid.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+    grid.style.transform = 'translateX(0)';
+    grid.style.opacity = '1';
+    setTimeout(() => {
+      grid.style.transition = '';
+      grid.style.transform = '';
+      grid.style.opacity = '';
+    }, 200);
   }
 }, {passive: true});
 </script>
