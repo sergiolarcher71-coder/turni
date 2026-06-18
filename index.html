@@ -1152,7 +1152,7 @@ document.addEventListener('touchmove', e => {
   const grid = document.getElementById('calGrid');
   grid.style.transform = `translateX(${diff * 0.4}px)`;
   grid.style.opacity = `${1 - Math.abs(diff) / 800}`;
-}, {passive: true});
+}, {passive: false});
 
 document.addEventListener('touchend', e => {
   if (!isDragging) return;
