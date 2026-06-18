@@ -1,0 +1,16 @@
+{
+  "name": "iProT",
+  "short_name": "iProT",
+  "start_url": "/turni/",
+  "display": "standalone",
+  "background_color": "#1A1A2E",
+  "theme_color": "#1A1A2E",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "iprot_icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ]
+}
