@@ -89,6 +89,20 @@
     white-space: nowrap;
   }
   .today-btn:active { filter: brightness(0.9); }
+  .cal-slide-left {
+    animation: slideLeft 0.3s ease;
+  }
+  .cal-slide-right {
+    animation: slideRight 0.3s ease;
+  }
+  @keyframes slideLeft {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
+  @keyframes slideRight {
+    from { transform: translateX(-100%); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+  }
 
   /* ── CALENDARIO ── */
   .calendar-wrap { padding: 10px 8px; flex: 1; }
@@ -764,7 +778,21 @@ function cambiaMs(delta) {
   let m = stato.mese + delta, a = stato.anno;
   if (m > 12) { m = 1;  a++; }
   if (m < 1)  { m = 12; a--; }
+  
+  const grid = document.getElementById('calGrid');
+  const classe = delta > 0 ? 'cal-slide-left' : 'cal-slide-right';
+  
+  // Rimuovi animazione precedente
+  grid.classList.remove('cal-slide-left', 'cal-slide-right');
+  
   creaCalendario(m, a);
+  
+  // Forza reflow e aggiungi animazione
+  void grid.offsetWidth;
+  grid.classList.add(classe);
+  
+  // Rimuovi classe dopo animazione
+  setTimeout(() => grid.classList.remove(classe), 300);
 }
 
 function vaiOggi() {
