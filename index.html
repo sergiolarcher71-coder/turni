@@ -104,8 +104,8 @@
     color: var(--fg-dim);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 20px;
-    padding: 5px 14px;
-    font-size: 12px;
+    padding: 4px 10px;
+    font-size: 11px;
     font-weight: 700;
     cursor: pointer;
     touch-action: manipulation;
@@ -684,7 +684,7 @@ function creaSelettoreSquadre() {
     const sq  = SQUADRE[num];
     const btn = document.createElement('button');
     btn.className = 'sq-btn' + (parseInt(num) === stato.squadraAttiva ? ' active' : '');
-    btn.textContent = sq.nome;
+    btn.textContent = sq.nome.replace('Squadra', 'Sq.');
     btn.onclick = () => {
       stato.squadraAttiva = parseInt(num);
       localStorage.setItem('turni_squadra', num);
