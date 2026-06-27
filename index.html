@@ -318,6 +318,24 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--cell); border-radius: 2px; }
+  
+  @media screen and (orientation: landscape) and (max-height: 500px) {
+    body::after {
+      content: "📱 Ruota il telefono in verticale";
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      color: var(--gold);
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 9999;
+      padding: 40px;
+    }
+  }
 
   @media (min-width: 480px) {
     .modal { border-radius: var(--radius); margin: 20px; max-height: 85dvh; }
