@@ -169,6 +169,10 @@
     color: white;
     line-height: 1;
   }
+  .day-num.riposo {
+    color: #FFD700;
+    font-weight: 900;
+  }
   .turno-label {
     font-size: 0px; /* nascosto */
   }
@@ -185,16 +189,18 @@
     flex-wrap: wrap;
     gap: 6px;
     padding: 8px 12px;
-    background: var(--panel);
+    background: #FFD700;
+    color: #000000;
   }
   .legenda-item {
     display: flex;
     align-items: center;
     gap: 4px;
     font-size: 9px;
-    color: var(--fg-dim);
+    color: #000000;
+    font-weight: 700;
   }
-  .legenda-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .legenda-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
 
   /* ── BOTTOM NAV ── */
   .bottom-nav {
@@ -271,6 +277,57 @@
     font-size: 13px; cursor: pointer; touch-action: manipulation;
   }
   .radio-btn.selected { background: var(--accent); border-color: var(--accent); color: white; font-weight: 700; }
+
+  /* ── PERSONALIZZAZIONE COLORI ── */
+  .color-picker-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .color-picker-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .color-picker-item label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0;
+  }
+  .color-picker-item input[type="color"] {
+    width: 100%;
+    height: 40px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    padding: 2px;
+  }
+  .color-picker-item input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 2px;
+  }
+  .color-picker-item input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 4px;
+  }
+  .btn-reset-colors {
+    background: var(--cell);
+    color: var(--fg);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    width: 100%;
+    font-family: inherit;
+  }
+  .btn-reset-colors:active { filter: brightness(0.85); }
 
   /* ── BUTTONS ── */
   .btn {
@@ -378,10 +435,10 @@
 
 <!-- LEGENDA -->
 <div class="legenda">
-  <div class="legenda-item"><div class="legenda-dot" style="background:#5B9BD5"></div>Mattino</div>
-  <div class="legenda-item"><div class="legenda-dot" style="background:#2E8B57"></div>Pomeriggio</div>
-  <div class="legenda-item"><div class="legenda-dot" style="background:#1C1C6E"></div>Notte</div>
-  <div class="legenda-item"><div class="legenda-dot" style="background:#6C757D"></div>Riposo</div>
+  <div class="legenda-item"><div class="legenda-dot" style="background:#4A90D9"></div>Mattino</div>
+  <div class="legenda-item"><div class="legenda-dot" style="background:#2ECC71"></div>Pomeriggio</div>
+  <div class="legenda-item"><div class="legenda-dot" style="background:#2C3E50"></div>Notte</div>
+  <div class="legenda-item"><div class="legenda-dot" style="background:#95A5A6"></div>Riposo</div>
   <div class="legenda-item">📌 Promemoria</div>
 </div>
 
@@ -389,6 +446,7 @@
 <div class="bottom-nav">
   <button class="bottom-btn" onclick="apriListaPromemoria()"><span class="icon">📋</span><span>Tutti</span></button>
   <button class="bottom-btn" onclick="controllaAvvisi(true)"><span class="icon">🔔</span><span>Avvisi</span></button>
+  <button class="bottom-btn" onclick="apriPersonalizzazione()"><span class="icon">🎨</span><span>Colori</span></button>
   <button class="bottom-btn" onclick="esportaDati()"><span class="icon">💾</span><span>Esporta</span></button>
   <button class="bottom-btn" onclick="importaDati()"><span class="icon">📥</span><span>Importa</span></button>
 </div>
@@ -462,6 +520,41 @@
     </div>
     <div class="month-picker" id="monthPickerGrid"></div>
     <button class="btn btn-accent" onclick="chiudiModal('modalMese')">Annulla</button>
+  </div>
+</div>
+
+<!-- ══ MODAL PERSONALIZZAZIONE COLORI ══ -->
+<div class="modal-overlay" id="modalColori">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🎨 Personalizza colori turni</div>
+    
+    <p style="font-size:13px;color:var(--fg-dim);margin-bottom:12px;">
+      Scegli i colori che preferisci per ogni tipo di turno. 
+      Le modifiche sono salvate automaticamente nel tuo browser.
+    </p>
+    
+    <div class="color-picker-group">
+      <div class="color-picker-item">
+        <label>🌅 Mattino</label>
+        <input type="color" id="colorMattino" value="#4A90D9">
+      </div>
+      <div class="color-picker-item">
+        <label>☀️ Pomeriggio</label>
+        <input type="color" id="colorPomeriggio" value="#2ECC71">
+      </div>
+      <div class="color-picker-item">
+        <label>🌙 Notte</label>
+        <input type="color" id="colorNotte" value="#2C3E50">
+      </div>
+      <div class="color-picker-item">
+        <label>😴 Riposo</label>
+        <input type="color" id="colorRiposo" value="#95A5A6">
+      </div>
+    </div>
+    
+    <button class="btn-reset-colors" onclick="resetColoriDefault()">🔄 Ripristina colori originali</button>
+    <button class="btn btn-accent" onclick="chiudiModal('modalColori'); applicaColori();" style="margin-top:12px">✅ Applica e chiudi</button>
   </div>
 </div>
 
@@ -623,12 +716,104 @@ const SQUADRE = {
   },
 };
 
-const COLORI = {
-  'MATTINO':'#5B9BD5','RIPOSO':'#6C757D','NOTTE':'#1C1C6E',
-  'POMERIGGIO':'#2E8B57','MATTINO EXTRA':'#D4A017',
-  'RIPOSO EXTRA':'#C0406A','NOTTE EXTRA':'#7D3C98',
-  'POMERIGGIO EXTRA':'#1A8A6B',
+// ══════════════════════════════════════════════
+//  COLORI DINAMICI (con salvataggio localStorage)
+// ══════════════════════════════════════════════
+
+// Colori di default (base)
+const COLORI_DEFAULT = {
+  'MATTINO': '#5B9BD5',
+  'POMERIGGIO': '#2E8B57',
+  'NOTTE': '#1C1C6E',
+  'RIPOSO': '#6C757D',
 };
+
+// Colori personalizzati dell'utente
+let COLORI = { ...COLORI_DEFAULT };
+
+function caricaColori() {
+  const salvati = localStorage.getItem('turni_colori_personalizzati');
+  if (salvati) {
+    try {
+      const parsed = JSON.parse(salvati);
+      COLORI = { ...COLORI_DEFAULT, ...parsed };
+    } catch(e) {
+      COLORI = { ...COLORI_DEFAULT };
+    }
+  } else {
+    COLORI = { ...COLORI_DEFAULT };
+  }
+}
+
+function salvaColori() {
+  localStorage.setItem('turni_colori_personalizzati', JSON.stringify(COLORI));
+}
+
+function coloreTurno(turno) {
+  // Se il turno contiene "EXTRA", prendi la parte base
+  let turnoBase = turno;
+  if (turno.includes('EXTRA')) {
+    turnoBase = turno.replace(' EXTRA', '');
+  }
+  
+  // Cerca il colore per il turno base
+  if (COLORI[turnoBase]) {
+    return COLORI[turnoBase];
+  }
+  
+  // Fallback
+  for (const [key, value] of Object.entries(COLORI)) {
+    if (turno.startsWith(key)) return value;
+  }
+  
+  return '#3A3A3C';
+}
+// ══════════════════════════════════════════════
+//  FUNZIONI PER LA PERSONALIZZAZIONE
+// ══════════════════════════════════════════════
+
+function apriPersonalizzazione() {
+  // Carica i colori attuali nei selettori
+  document.getElementById('colorMattino').value = COLORI['MATTINO'] || COLORI_DEFAULT['MATTINO'];
+  document.getElementById('colorPomeriggio').value = COLORI['POMERIGGIO'] || COLORI_DEFAULT['POMERIGGIO'];
+  document.getElementById('colorNotte').value = COLORI['NOTTE'] || COLORI_DEFAULT['NOTTE'];
+  document.getElementById('colorRiposo').value = COLORI['RIPOSO'] || COLORI_DEFAULT['RIPOSO'];
+  
+  apriModal('modalColori');
+}
+
+function applicaColori() {
+  // Legge i valori dai selettori
+  const nuovoMattino = document.getElementById('colorMattino').value;
+  const nuovoPomeriggio = document.getElementById('colorPomeriggio').value;
+  const nuovoNotte = document.getElementById('colorNotte').value;
+  const nuovoRiposo = document.getElementById('colorRiposo').value;
+  
+  // Aggiorna l'oggetto COLORI (mantenendo gli EXTRA)
+  COLORI['MATTINO'] = nuovoMattino;
+  COLORI['POMERIGGIO'] = nuovoPomeriggio;
+  COLORI['NOTTE'] = nuovoNotte;
+  COLORI['RIPOSO'] = nuovoRiposo;
+  
+  // Salva e ricarica il calendario
+  salvaColori();
+  creaCalendario(stato.mese, stato.anno);
+}
+
+function resetColoriDefault() {
+  if (!confirm('Ripristinare i colori originali?')) return;
+  
+  COLORI = { ...COLORI_DEFAULT };
+  salvaColori();
+  
+  // Aggiorna i selettori
+  document.getElementById('colorMattino').value = COLORI_DEFAULT['MATTINO'];
+  document.getElementById('colorPomeriggio').value = COLORI_DEFAULT['POMERIGGIO'];
+  document.getElementById('colorNotte').value = COLORI_DEFAULT['NOTTE'];
+  document.getElementById('colorRiposo').value = COLORI_DEFAULT['RIPOSO'];
+  
+  creaCalendario(stato.mese, stato.anno);
+}
 
 const MESI_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
                  'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -683,13 +868,6 @@ function getTurno(y, m, d, numSquadra) {
 
   const idxFinale = ((diff + idxRef) % 15 + 15) % 15;
   return CICLO[idxFinale];
-}
-
-function coloreTurno(turno) {
-  for (const [k, v] of Object.entries(COLORI)) {
-    if (turno.startsWith(k)) return v;
-  }
-  return '#3A3A3C';
 }
 
 // ══════════════════════════════════════════════
@@ -773,13 +951,14 @@ function creaCalendario(mese, anno) {
     const key    = chiaveData(anno, mese, g);
     const nProm  = (stato.promemoria[key] || []).length;
     const isOggi = key === oggiStr;
+    const isRiposo = turno.includes('RIPOSO');
 
     const cell = document.createElement('div');
     cell.className = 'day-cell' + (isOggi ? ' today' : '');
     cell.style.background = bg;
     cell.onclick = () => apriGiorno(anno, mese, g);
     cell.innerHTML = `
-      <div class="day-num">${g}</div>
+      <div class="day-num ${isRiposo ? 'riposo' : ''}">${g}</div>
       <div class="turno-label"></div>
       ${nProm > 0 ? `<div class="badges"><span style="font-size:18px">📌</span>${nProm > 1 ? `<span style="font-size:9px;color:rgba(255,255,255,0.8)">${nProm}</span>` : ''}</div>` : ''}
     `;
@@ -1131,6 +1310,7 @@ document.addEventListener('touchend', e => {
 //  AVVIO
 // ══════════════════════════════════════════════
 carica();
+caricaColori();
 creaSelettoreSquadre();
 const adesso = new Date();
 creaCalendario(adesso.getMonth()+1, adesso.getFullYear());
