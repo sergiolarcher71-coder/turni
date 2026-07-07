@@ -854,8 +854,7 @@ function getTurno(y, m, d, numSquadra) {
   else if (data >= r2024) ref = r2024;
   else                    ref = DATA_INI;
 
-  const diff = Math.round((data - ref) / 86400000);
-  const idx  = ((diff + sq.indiceInizio) % 15 + 15) % 15;
+  const diff = Math.round((data - ref) / 86400000);  
 
   // Calcola indice di partenza della ref
   let idxRef;
