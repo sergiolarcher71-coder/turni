@@ -166,21 +166,21 @@
   .day-num {
     font-size: 16px;
     font-weight: 700;
-    color: white;
     line-height: 1;
   }
   .day-num.riposo {
-    color: white;
-    font-weight: 700;
+    font-weight: 900;
   }
+  
   .turno-label {
-    font-size: 0px; /* nascosto */
+    font-size: 0px;
   }
   .badges {
     display: flex;
     gap: 2px;
     margin-top: 3px;
     font-size: 10px;
+    align-items: center;
   }
 
   /* ── LEGENDA ── */
@@ -400,6 +400,62 @@
     .day-cell { min-height: 80px; }
     .day-num  { font-size: 20px; }
   }
+
+  /* ── MODALE PERSONALIZZAZIONE COLORI (larghezza piena su mobile) ── */
+  #modalColori .modal {
+    max-width: 100%;
+    width: 100%;
+    padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+  }
+
+  #modalColori .color-picker-group {
+    gap: 8px;
+    margin: 10px 0;
+  }
+
+  #modalColori .color-picker-item label {
+    font-size: 10px;
+  }
+
+  #modalColori .color-picker-item input[type="color"] {
+    height: 36px;
+  }
+
+  /* Per schermi molto piccoli (iPhone SE) */
+  @media (max-width: 380px) {
+    #modalColori .color-picker-group {
+      gap: 6px;
+    }
+    #modalColori .color-picker-item input[type="color"] {
+      height: 32px;
+    }
+    #modalColori .color-picker-item label {
+      font-size: 9px;
+    }
+  }
+
+  /* ── TABS ── */
+  .tab-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .tab-btn:active { filter: brightness(0.85); }
+  .tab-btn.active-prom { background: var(--verde); color: white; }
+  .tab-btn.active-note { background: var(--gold); color: #111; }
+  .tab-btn.inactive { background: var(--cell); color: var(--fg-dim); }
 </style>
 </head>
 <body>
@@ -434,12 +490,21 @@
 </div>
 
 <!-- LEGENDA -->
-<div class="legenda">
-  <div class="legenda-item"><div class="legenda-dot" style="background:#4A90D9"></div>Mattino</div>
-  <div class="legenda-item"><div class="legenda-dot" style="background:#2ECC71"></div>Pomeriggio</div>
-  <div class="legenda-item"><div class="legenda-dot" style="background:#2C3E50"></div>Notte</div>
-  <div class="legenda-item"><div class="legenda-dot" style="background:#95A5A6"></div>Riposo</div>
+<div class="legenda" id="legendaContainer">
+  <div class="legenda-item" id="legendaMattino">
+    <div class="legenda-dot" id="dotMattino" style="background:#5B9BD5"></div>Mattino
+  </div>
+  <div class="legenda-item" id="legendaPomeriggio">
+    <div class="legenda-dot" id="dotPomeriggio" style="background:#2E8B57"></div>Pomeriggio
+  </div>
+  <div class="legenda-item" id="legendaNotte">
+    <div class="legenda-dot" id="dotNotte" style="background:#1C1C6E"></div>Notte
+  </div>
+  <div class="legenda-item" id="legendaRiposo">
+    <div class="legenda-dot" id="dotRiposo" style="background:#6C757D"></div>Riposo
+  </div>
   <div class="legenda-item">📌 Promemoria</div>
+  <div class="legenda-item">📝 Note</div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -456,10 +521,22 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header-colored" id="giornoHeader"></div>
-    <div style="font-size:13px;font-weight:700;color:var(--fg-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📝 PROMEMORIA</div>
+    
+    <!-- PROMEMORIA -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--fg-dim);text-transform:uppercase;letter-spacing:1px;">📌 PROMEMORIA</div>
+      <button class="btn-sm" onclick="apriNuovoProm()" style="background:var(--verde);color:white;font-size:11px;">➕ Aggiungi</button>
+    </div>
     <div id="listaProm"></div>
-    <button class="btn btn-verde" onclick="apriNuovoProm()">➕ Aggiungi Promemoria</button>
-    <button class="btn btn-cell" onclick="chiudiModal('modalGiorno')" style="margin-top:6px">Chiudi</button>
+    
+    <!-- NOTE -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 8px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
+      <div style="font-size:13px;font-weight:700;color:var(--fg-dim);text-transform:uppercase;letter-spacing:1px;">📝 NOTE</div>
+      <button class="btn-sm" onclick="apriNuovaNota()" style="background:var(--gold);color:#111;font-size:11px;">➕ Aggiungi</button>
+    </div>
+    <div id="listaNote"></div>
+    
+    <button class="btn btn-cell" onclick="chiudiModal('modalGiorno')" style="margin-top:16px">Chiudi</button>
   </div>
 </div>
 
@@ -484,16 +561,35 @@
   </div>
 </div>
 
-<!-- ══ MODAL LISTA TUTTI PROMEMORIA ══ -->
+<!-- ══ MODAL NUOVA NOTA ══ -->
+<div class="modal-overlay" id="modalNota">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="notaModalTitolo">📝 Nuova Nota</div>
+    <label>Testo</label>
+    <textarea id="notaTesto" rows="4" placeholder="Scrivi la tua nota..."></textarea>
+    <button class="btn btn-verde" onclick="salvaNota()">💾 Salva Nota</button>
+    <button class="btn btn-accent" onclick="chiudiModal('modalNota')" style="margin-top:6px">Annulla</button>
+  </div>
+</div>
+
+<!-- ══ MODAL LISTA TUTTI PROMEMORIA E NOTE ══ -->
 <div class="modal-overlay" id="modalLista">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">📋 Tutti i Promemoria</div>
+    <div class="modal-title">📋 Tutti i contenuti</div>
+    
+    <!-- TABS -->
+    <div class="tab-container">
+      <button id="tabPromemoria" class="tab-btn active-prom" onclick="cambiaTab('promemoria')">📌 Promemoria</button>
+      <button id="tabNote" class="tab-btn inactive" onclick="cambiaTab('note')">📝 Note</button>
+    </div>
+    
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Cerca promemoria..." oninput="filtraPromemoria()">
+      <input type="text" id="searchInput" placeholder="Cerca..." oninput="filtraContenuti()">
     </div>
-    <div id="listaPromAll"></div>
+    <div id="listaContenuti"></div>
     <button class="btn btn-accent" onclick="chiudiModal('modalLista')" style="margin-top:12px">Chiudi</button>
   </div>
 </div>
@@ -527,29 +623,37 @@
 <div class="modal-overlay" id="modalColori">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">🎨 Personalizza colori turni</div>
+    <div class="modal-title">🎨 Personalizza colori</div>
     
     <p style="font-size:13px;color:var(--fg-dim);margin-bottom:12px;">
-      Scegli i colori che preferisci per ogni tipo di turno. 
+      Scegli i colori che preferisci per ogni tipo di turno, per i numeri e per lo sfondo.
       Le modifiche sono salvate automaticamente nel tuo browser.
     </p>
     
     <div class="color-picker-group">
       <div class="color-picker-item">
         <label>🌅 Mattino</label>
-        <input type="color" id="colorMattino" value="#4A90D9">
+        <input type="color" id="colorMattino" value="#5B9BD5">
       </div>
       <div class="color-picker-item">
         <label>☀️ Pomeriggio</label>
-        <input type="color" id="colorPomeriggio" value="#2ECC71">
+        <input type="color" id="colorPomeriggio" value="#2E8B57">
       </div>
       <div class="color-picker-item">
         <label>🌙 Notte</label>
-        <input type="color" id="colorNotte" value="#2C3E50">
+        <input type="color" id="colorNotte" value="#1C1C6E">
       </div>
       <div class="color-picker-item">
         <label>😴 Riposo</label>
-        <input type="color" id="colorRiposo" value="#95A5A6">
+        <input type="color" id="colorRiposo" value="#6C757D">
+      </div>
+      <div class="color-picker-item">
+        <label>🔢 Numeri</label>
+        <input type="color" id="colorNumeri" value="#FFFFFF">
+      </div>
+      <div class="color-picker-item">
+        <label>🖼️ Sfondo</label>
+        <input type="color" id="colorSfondo" value="#1A1A2E">
       </div>
     </div>
     
@@ -575,7 +679,7 @@ const CICLO = {
 const SQUADRE = {
   1: {
     nome: 'Squadra 1',
-    indiceInizio: 3,  // RIPOSO 1° dopo le mattine
+    indiceInizio: 3,
     riprese: {
       2024: new Date(2024,7,15),
       2025: new Date(2025,7,11),
@@ -601,7 +705,7 @@ const SQUADRE = {
   },
   2: {
     nome: 'Squadra 2',
-    indiceInizio: 0,  // MATTINO 1°
+    indiceInizio: 0,
     riprese: {
       2024: new Date(2024,7,15),
       2025: new Date(2025,7,11),
@@ -623,7 +727,7 @@ const SQUADRE = {
   },
   3: {
     nome: 'Squadra 3',
-    indiceInizio: 12,  // POMERIGGIO 3°
+    indiceInizio: 12,
     riprese: {
       2024: new Date(2024,7,15),
       2025: new Date(2025,7,11),
@@ -653,7 +757,7 @@ const SQUADRE = {
   },
   4: {
     nome: 'Squadra 4',
-    indiceInizio: 9,  // RIPOSO 2° dopo le notti (prima dei pomeriggi)
+    indiceInizio: 9,
     riprese: {
       2024: new Date(2024,7,15),
       2025: new Date(2025,7,11),
@@ -685,7 +789,7 @@ const SQUADRE = {
   },
   5: {
     nome: 'Squadra 5',
-    indiceInizio: 6,  // NOTTE 2ª
+    indiceInizio: 6,
     riprese: {
       2024: new Date(2024,7,15),
       2025: new Date(2025,7,11),
@@ -726,6 +830,8 @@ const COLORI_DEFAULT = {
   'POMERIGGIO': '#2E8B57',
   'NOTTE': '#1C1C6E',
   'RIPOSO': '#6C757D',
+  'NUMERI': '#FFFFFF',
+  'SFONDO': '#1A1A2E',
 };
 
 // Colori personalizzati dell'utente
@@ -750,54 +856,67 @@ function salvaColori() {
 }
 
 function coloreTurno(turno) {
-  // Se il turno contiene "EXTRA", prendi la parte base
   let turnoBase = turno;
   if (turno.includes('EXTRA')) {
     turnoBase = turno.replace(' EXTRA', '');
   }
   
-  // Cerca il colore per il turno base
   if (COLORI[turnoBase]) {
     return COLORI[turnoBase];
   }
   
-  // Fallback
   for (const [key, value] of Object.entries(COLORI)) {
     if (turno.startsWith(key)) return value;
   }
   
   return '#3A3A3C';
 }
+
+function aggiornaLegenda() {
+  const dotMattino = document.getElementById('dotMattino');
+  const dotPomeriggio = document.getElementById('dotPomeriggio');
+  const dotNotte = document.getElementById('dotNotte');
+  const dotRiposo = document.getElementById('dotRiposo');
+  
+  if (dotMattino) dotMattino.style.background = COLORI['MATTINO'] || COLORI_DEFAULT['MATTINO'];
+  if (dotPomeriggio) dotPomeriggio.style.background = COLORI['POMERIGGIO'] || COLORI_DEFAULT['POMERIGGIO'];
+  if (dotNotte) dotNotte.style.background = COLORI['NOTTE'] || COLORI_DEFAULT['NOTTE'];
+  if (dotRiposo) dotRiposo.style.background = COLORI['RIPOSO'] || COLORI_DEFAULT['RIPOSO'];
+}
+
 // ══════════════════════════════════════════════
 //  FUNZIONI PER LA PERSONALIZZAZIONE
 // ══════════════════════════════════════════════
 
 function apriPersonalizzazione() {
-  // Carica i colori attuali nei selettori
   document.getElementById('colorMattino').value = COLORI['MATTINO'] || COLORI_DEFAULT['MATTINO'];
   document.getElementById('colorPomeriggio').value = COLORI['POMERIGGIO'] || COLORI_DEFAULT['POMERIGGIO'];
   document.getElementById('colorNotte').value = COLORI['NOTTE'] || COLORI_DEFAULT['NOTTE'];
   document.getElementById('colorRiposo').value = COLORI['RIPOSO'] || COLORI_DEFAULT['RIPOSO'];
-  
+  document.getElementById('colorNumeri').value = COLORI['NUMERI'] || COLORI_DEFAULT['NUMERI'];
+  document.getElementById('colorSfondo').value = COLORI['SFONDO'] || COLORI_DEFAULT['SFONDO']; 
   apriModal('modalColori');
 }
 
 function applicaColori() {
-  // Legge i valori dai selettori
   const nuovoMattino = document.getElementById('colorMattino').value;
   const nuovoPomeriggio = document.getElementById('colorPomeriggio').value;
   const nuovoNotte = document.getElementById('colorNotte').value;
   const nuovoRiposo = document.getElementById('colorRiposo').value;
+  const nuovoNumeri = document.getElementById('colorNumeri').value;
+  const nuovoSfondo = document.getElementById('colorSfondo').value;
   
-  // Aggiorna l'oggetto COLORI (mantenendo gli EXTRA)
   COLORI['MATTINO'] = nuovoMattino;
   COLORI['POMERIGGIO'] = nuovoPomeriggio;
   COLORI['NOTTE'] = nuovoNotte;
   COLORI['RIPOSO'] = nuovoRiposo;
+  COLORI['NUMERI'] = nuovoNumeri;
+  COLORI['SFONDO'] = nuovoSfondo;
   
-  // Salva e ricarica il calendario
   salvaColori();
+  aggiornaSfondo();
   creaCalendario(stato.mese, stato.anno);
+  aggiornaLegenda();
 }
 
 function resetColoriDefault() {
@@ -806,13 +925,27 @@ function resetColoriDefault() {
   COLORI = { ...COLORI_DEFAULT };
   salvaColori();
   
-  // Aggiorna i selettori
   document.getElementById('colorMattino').value = COLORI_DEFAULT['MATTINO'];
   document.getElementById('colorPomeriggio').value = COLORI_DEFAULT['POMERIGGIO'];
   document.getElementById('colorNotte').value = COLORI_DEFAULT['NOTTE'];
   document.getElementById('colorRiposo').value = COLORI_DEFAULT['RIPOSO'];
-  
+  document.getElementById('colorNumeri').value = COLORI_DEFAULT['NUMERI'];
+  document.getElementById('colorSfondo').value = COLORI_DEFAULT['SFONDO'];
+
+  aggiornaSfondo();
   creaCalendario(stato.mese, stato.anno);
+  aggiornaLegenda();
+}
+
+// ══════════════════════════════════════════════
+//  AGGIORNA SFONDO
+// ══════════════════════════════════════════════
+function aggiornaSfondo() {
+  const coloreSfondo = COLORI['SFONDO'] || COLORI_DEFAULT['SFONDO'];
+  document.body.style.background = coloreSfondo;
+  
+  // Aggiorna anche le variabili CSS per gli elementi che ereditano lo sfondo
+  document.documentElement.style.setProperty('--bg', coloreSfondo);
 }
 
 const MESI_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
@@ -825,10 +958,13 @@ const stato = {
   mese: null, anno: null,
   squadraAttiva: 2,
   promemoria: {},
+  note: {},
   giornoSelezionato: null,
   promEditIdx: null,
+  notaEditIdx: null,
   anticipoSelezionato: 0,
   pickerAnno: new Date().getFullYear(),
+  tabCorrente: 'promemoria',
 };
 
 function chiaveData(y,m,d) { return `${y}-${m}-${d}`; }
@@ -854,14 +990,12 @@ function getTurno(y, m, d, numSquadra) {
   else if (data >= r2024) ref = r2024;
   else                    ref = DATA_INI;
 
-  const diff = Math.round((data - ref) / 86400000);  
+  const diff = Math.round((data - ref) / 86400000);
 
-  // Calcola indice di partenza della ref
   let idxRef;
   if (ref === DATA_INI) {
     idxRef = sq.indiceInizio;
   } else {
-    // La data di ripresa ha lo stesso indice dell'inizio
     idxRef = sq.indiceInizio;
   }
 
@@ -895,6 +1029,7 @@ function creaSelettoreSquadre() {
 // ══════════════════════════════════════════════
 function salva() {
   localStorage.setItem('turni_prom', JSON.stringify(stato.promemoria));
+  localStorage.setItem('turni_note', JSON.stringify(stato.note));
   localStorage.setItem('turni_ultimo', new Date().toISOString().slice(0,10));
 }
 
@@ -902,16 +1037,31 @@ function carica() {
   const sq  = localStorage.getItem('turni_squadra');
   if (sq) stato.squadraAttiva = parseInt(sq);
 
-  const raw = localStorage.getItem('turni_prom');
-  if (raw) {
+  // Carica promemoria
+  const rawProm = localStorage.getItem('turni_prom');
+  if (rawProm) {
     try {
-      const data = JSON.parse(raw);
+      const data = JSON.parse(rawProm);
       const norm = {};
       Object.entries(data).forEach(([key, val]) => {
         const [y, m, d] = key.split('-').map(Number);
         norm[`${y}-${m}-${d}`] = val;
       });
       stato.promemoria = norm;
+    } catch(e) {}
+  }
+  
+  // Carica note
+  const rawNote = localStorage.getItem('turni_note');
+  if (rawNote) {
+    try {
+      const data = JSON.parse(rawNote);
+      const norm = {};
+      Object.entries(data).forEach(([key, val]) => {
+        const [y, m, d] = key.split('-').map(Number);
+        norm[`${y}-${m}-${d}`] = val;
+      });
+      stato.note = norm;
     } catch(e) {}
   }
 }
@@ -949,17 +1099,24 @@ function creaCalendario(mese, anno) {
     const bg     = coloreTurno(turno);
     const key    = chiaveData(anno, mese, g);
     const nProm  = (stato.promemoria[key] || []).length;
+    const nNote  = (stato.note[key] || []).length;
+    const totaleBadge = nProm + nNote;
     const isOggi = key === oggiStr;
     const isRiposo = turno.includes('RIPOSO');
+    const coloreNumero = COLORI['NUMERI'] || '#FFFFFF';
 
+    
     const cell = document.createElement('div');
     cell.className = 'day-cell' + (isOggi ? ' today' : '');
     cell.style.background = bg;
     cell.onclick = () => apriGiorno(anno, mese, g);
     cell.innerHTML = `
-      <div class="day-num ${isRiposo ? 'riposo' : ''}">${g}</div>
-      <div class="turno-label"></div>
-      ${nProm > 0 ? `<div class="badges"><span style="font-size:18px">📌</span>${nProm > 1 ? `<span style="font-size:9px;color:rgba(255,255,255,0.8)">${nProm}</span>` : ''}</div>` : ''}
+      <div class="day-num ${isRiposo ? 'riposo' : ''}" style="color: ${coloreNumero};">${g}</div>
+      ${totaleBadge > 0 ? `<div class="badges">
+        ${nProm > 0 ? '<span style="font-size:14px;">📌</span>' : ''}
+        ${nNote > 0 ? '<span style="font-size:14px;">📝</span>' : ''}
+        ${totaleBadge > 1 ? `<span style="font-size:9px;color:rgba(255,255,255,0.8)">${totaleBadge}</span>` : ''}
+      </div>` : ''}
     `;
     grid.appendChild(cell);
   }
@@ -1023,6 +1180,7 @@ function apriGiorno(y, m, d) {
     <p>🔹 ${turno} &nbsp;·&nbsp; ${nomeSq}</p>
   `;
   aggiornaListaProm();
+  aggiornaListaNote();
   apriModal('modalGiorno');
 }
 
@@ -1032,19 +1190,41 @@ function aggiornaListaProm() {
   const list = stato.promemoria[key] || [];
   const div  = document.getElementById('listaProm');
   if (list.length === 0) {
-    div.innerHTML = '<div class="empty-msg">Nessun promemoria per questo giorno</div>';
+    div.innerHTML = '<div class="empty-msg" style="font-size:11px;">Nessun promemoria per questo giorno</div>';
     return;
   }
   div.innerHTML = list.map((p, i) => {
     const ant   = p.anticipo || 0;
     const badge = ant > 0 ? `<div class="prom-badge">🔔 Ogni giorno per ${ant}gg prima</div>` : '';
-    return `<div class="prom-item">
+    return `<div class="prom-item" style="border-left:3px solid var(--verde);">
       <div style="flex:1">
         <div class="prom-text">${escHtml(p.testo)}</div>${badge}
       </div>
       <div class="prom-actions">
         <button class="btn-sm" style="background:var(--gold);color:#111" onclick="apriModificaProm(${i})">✏️</button>
         <button class="btn-sm" style="background:var(--accent);color:white" onclick="eliminaProm(${i})">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function aggiornaListaNote() {
+  const {y, m, d} = stato.giornoSelezionato;
+  const key  = chiaveData(y, m, d);
+  const list = stato.note[key] || [];
+  const div  = document.getElementById('listaNote');
+  if (list.length === 0) {
+    div.innerHTML = '<div class="empty-msg" style="font-size:11px;">Nessuna nota per questo giorno</div>';
+    return;
+  }
+  div.innerHTML = list.map((p, i) => {
+    return `<div class="prom-item" style="border-left:3px solid var(--gold);">
+      <div style="flex:1">
+        <div class="prom-text" style="font-size:13px;">${escHtml(p.testo)}</div>
+      </div>
+      <div class="prom-actions">
+        <button class="btn-sm" style="background:var(--gold);color:#111;font-size:11px;" onclick="apriModificaNota(${i})">✏️</button>
+        <button class="btn-sm" style="background:var(--accent);color:white;font-size:11px;" onclick="eliminaNota(${i})">🗑️</button>
       </div>
     </div>`;
   }).join('');
@@ -1119,37 +1299,119 @@ function eliminaProm(idx) {
 }
 
 // ══════════════════════════════════════════════
-//  LISTA TUTTI PROMEMORIA
+//  MODAL NOTE
 // ══════════════════════════════════════════════
+function apriNuovaNota() {
+  stato.notaEditIdx = null;
+  document.getElementById('notaModalTitolo').textContent = '📝 Nuova Nota';
+  document.getElementById('notaTesto').value = '';
+  apriModal('modalNota');
+}
+
+function apriModificaNota(idx) {
+  const {y, m, d} = stato.giornoSelezionato;
+  const key = chiaveData(y, m, d);
+  const p = stato.note[key] ? stato.note[key][idx] : null;
+  if (!p) return;
+  stato.notaEditIdx = idx;
+  document.getElementById('notaModalTitolo').textContent = '✏️ Modifica Nota';
+  document.getElementById('notaTesto').value = p.testo;
+  apriModal('modalNota');
+}
+
+function salvaNota() {
+  const testo = document.getElementById('notaTesto').value.trim();
+  if (!testo) { alert('Inserisci un testo!'); return; }
+  const {y, m, d} = stato.giornoSelezionato;
+  const key = chiaveData(y, m, d);
+  if (!stato.note[key]) stato.note[key] = [];
+  const entry = { testo, data_creazione: new Date().toISOString().slice(0,19).replace('T',' ') };
+  if (stato.notaEditIdx !== null) {
+    stato.note[key][stato.notaEditIdx] = entry;
+  } else {
+    stato.note[key].push(entry);
+  }
+  salva();
+  chiudiModal('modalNota');
+  aggiornaListaNote();
+  creaCalendario(stato.mese, stato.anno);
+}
+
+function eliminaNota(idx) {
+  if (!confirm('Eliminare questa nota?')) return;
+  const {y, m, d} = stato.giornoSelezionato;
+  const key = chiaveData(y, m, d);
+  stato.note[key].splice(idx, 1);
+  if (stato.note[key].length === 0) delete stato.note[key];
+  salva();
+  aggiornaListaNote();
+  creaCalendario(stato.mese, stato.anno);
+}
+
+// ══════════════════════════════════════════════
+//  LISTA TUTTI PROMEMORIA E NOTE (con tab)
+// ══════════════════════════════════════════════
+
 function apriListaPromemoria() {
+  stato.tabCorrente = 'promemoria';
   document.getElementById('searchInput').value = '';
-  filtraPromemoria('');
+  aggiornaTabs();
+  filtraContenuti();
   apriModal('modalLista');
 }
 
-function filtraPromemoria() {
-  const filtro  = document.getElementById('searchInput').value.toLowerCase();
-  const div     = document.getElementById('listaPromAll');
-  const entries = Object.entries(stato.promemoria).sort();
+function cambiaTab(tab) {
+  stato.tabCorrente = tab;
+  aggiornaTabs();
+  filtraContenuti();
+}
+
+function aggiornaTabs() {
+  const tabProm = document.getElementById('tabPromemoria');
+  const tabNote = document.getElementById('tabNote');
+  
+  if (stato.tabCorrente === 'promemoria') {
+    tabProm.className = 'tab-btn active-prom';
+    tabNote.className = 'tab-btn inactive';
+  } else {
+    tabNote.className = 'tab-btn active-note';
+    tabProm.className = 'tab-btn inactive';
+  }
+}
+
+function filtraContenuti() {
+  const filtro = document.getElementById('searchInput').value.toLowerCase();
+  const div = document.getElementById('listaContenuti');
+  
+  let entries = [];
+  if (stato.tabCorrente === 'promemoria') {
+    entries = Object.entries(stato.promemoria).sort();
+  } else {
+    entries = Object.entries(stato.note).sort();
+  }
+  
   if (entries.length === 0) {
-    div.innerHTML = '<div class="empty-msg">Nessun promemoria salvato</div>';
+    div.innerHTML = `<div class="empty-msg">Nessun ${stato.tabCorrente === 'promemoria' ? 'promemoria' : 'nota'} salvato</div>`;
     return;
   }
+  
   let html = '';
   entries.forEach(([key, lista]) => {
     const [y,m,d] = key.split('-');
+    const emoji = stato.tabCorrente === 'promemoria' ? '📌' : '📝';
     lista.forEach((p) => {
-      const ant  = p.anticipo || 0;
       const voce = `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}  ${p.testo}`;
       if (filtro && !voce.toLowerCase().includes(filtro)) return;
+      const ant = p.anticipo || 0;
+      const badge = ant > 0 ? `<div class="prom-badge">🔔 ${ant}gg prima</div>` : '';
       html += `<div class="prom-item"><div style="flex:1">
-        <div style="font-size:11px;color:var(--fg-dim);margin-bottom:3px">${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}</div>
+        <div style="font-size:11px;color:var(--fg-dim);margin-bottom:3px">${emoji} ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}</div>
         <div class="prom-text">${escHtml(p.testo)}</div>
-        ${ant > 0 ? `<div class="prom-badge">🔔 ${ant}gg prima</div>` : ''}
+        ${badge}
       </div></div>`;
     });
   });
-  div.innerHTML = html || '<div class="empty-msg">Nessun risultato</div>';
+  div.innerHTML = html || `<div class="empty-msg">Nessun risultato</div>`;
 }
 
 // ══════════════════════════════════════════════
@@ -1204,7 +1466,11 @@ function controllaAvvisi(mostraSempre = false) {
 //  ESPORTA / IMPORTA
 // ══════════════════════════════════════════════
 function esportaDati() {
-  const blob = new Blob([JSON.stringify(stato.promemoria, null, 2)], {type:'application/json'});
+  const data = {
+    promemoria: stato.promemoria,
+    note: stato.note
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
@@ -1222,17 +1488,30 @@ function leggiImport(event) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if (confirm(`Importare ${Object.keys(data).length} voci? I dati attuali verranno uniti.`)) {
-        const norm = {};
-        Object.entries(data).forEach(([key, val]) => {
-          const [y, m, d] = key.split('-').map(Number);
-          norm[`${y}-${m}-${d}`] = val;
-        });
-        Object.assign(stato.promemoria, norm);
-        salva();
-        creaCalendario(stato.mese, stato.anno);
-        alert('✅ Dati importati con successo!');
+      // Supporta sia il vecchio formato che il nuovo
+      if (data.promemoria && data.note) {
+        if (confirm(`Importare ${Object.keys(data.promemoria).length + Object.keys(data.note).length} voci? I dati attuali verranno uniti.`)) {
+          Object.assign(stato.promemoria, data.promemoria);
+          Object.assign(stato.note, data.note);
+        }
+      } else if (data.promemoria) {
+        if (confirm(`Importare ${Object.keys(data.promemoria).length} promemoria? I dati attuali verranno uniti.`)) {
+          Object.assign(stato.promemoria, data.promemoria);
+        }
+      } else {
+        // Vecchio formato: solo promemoria
+        if (confirm(`Importare ${Object.keys(data).length} voci? I dati attuali verranno uniti.`)) {
+          const norm = {};
+          Object.entries(data).forEach(([key, val]) => {
+            const [y, m, d] = key.split('-').map(Number);
+            norm[`${y}-${m}-${d}`] = val;
+          });
+          Object.assign(stato.promemoria, norm);
+        }
       }
+      salva();
+      creaCalendario(stato.mese, stato.anno);
+      alert('✅ Dati importati con successo!');
     } catch(err) { alert('❌ File non valido.'); }
   };
   reader.readAsText(file);
@@ -1313,6 +1592,8 @@ caricaColori();
 creaSelettoreSquadre();
 const adesso = new Date();
 creaCalendario(adesso.getMonth()+1, adesso.getFullYear());
+aggiornaLegenda();
+aggiornaSfondo();
 setTimeout(() => controllaAvvisi(false), 1500);
 </script>
 </body>
