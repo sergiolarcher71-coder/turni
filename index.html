@@ -565,7 +565,7 @@
 <div class="modal-overlay" id="modalNota">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="notaModalTitolo">📝 Nuova Nota</div>
+    <div class="modal-title" id="notaModalTitolo">⭐️ Nuova Nota</div>
     <label>Testo</label>
     <textarea id="notaTesto" rows="4" placeholder="Scrivi la tua nota..."></textarea>
     <button class="btn btn-verde" onclick="salvaNota()">💾 Salva Nota</button>
@@ -582,7 +582,7 @@
     <!-- TABS -->
     <div class="tab-container">
       <button id="tabPromemoria" class="tab-btn active-prom" onclick="cambiaTab('promemoria')">📌 Promemoria</button>
-      <button id="tabNote" class="tab-btn inactive" onclick="cambiaTab('note')">📝 Note</button>
+      <button id="tabNote" class="tab-btn inactive" onclick="cambiaTab('note')">⭐️ Note</button>
     </div>
     
     <div class="search-wrap">
@@ -1114,7 +1114,7 @@ function creaCalendario(mese, anno) {
       <div class="day-num ${isRiposo ? 'riposo' : ''}" style="color: ${coloreNumero};">${g}</div>
       ${totaleBadge > 0 ? `<div class="badges">
         ${nProm > 0 ? '<span style="font-size:14px;">📌</span>' : ''}
-        ${nNote > 0 ? '<span style="font-size:14px;">🎵</span>' : ''}
+        ${nNote > 0 ? '<span style="font-size:14px;">⭐️</span>' : ''}
       </div>` : ''}
     `;
     grid.appendChild(cell);
@@ -1302,7 +1302,7 @@ function eliminaProm(idx) {
 // ══════════════════════════════════════════════
 function apriNuovaNota() {
   stato.notaEditIdx = null;
-  document.getElementById('notaModalTitolo').textContent = '📝 Nuova Nota';
+  document.getElementById('notaModalTitolo').textContent = '⭐️ Nuova Nota';
   document.getElementById('notaTesto').value = '';
   apriModal('modalNota');
 }
@@ -1397,7 +1397,7 @@ function filtraContenuti() {
   let html = '';
   entries.forEach(([key, lista]) => {
     const [y,m,d] = key.split('-');
-    const emoji = stato.tabCorrente === 'promemoria' ? '📌' : '📝';
+    const emoji = stato.tabCorrente === 'promemoria' ? '📌' : '⭐️';
     lista.forEach((p) => {
       const voce = `${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}  ${p.testo}`;
       if (filtro && !voce.toLowerCase().includes(filtro)) return;
