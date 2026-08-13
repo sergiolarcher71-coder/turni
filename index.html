@@ -897,7 +897,7 @@ const COLORI_DEFAULT = {
 let COLORI = { ...COLORI_DEFAULT };
 
 // Mostra numeri romani (default: true)
-let MOSTRA_ROMANI = true;
+let MOSTRA_ROMANI = false;
 
 function caricaColori() {
   const salvati = localStorage.getItem('turni_colori_personalizzati');
@@ -917,7 +917,7 @@ function caricaColori() {
   if (romani !== null) {
     MOSTRA_ROMANI = romani === 'true';
   } else {
-    MOSTRA_ROMANI = true;
+    MOSTRA_ROMANI = false;
   }
   
   // Aggiorna toggle
