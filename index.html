@@ -159,6 +159,7 @@
     justify-content: flex-start;
     transition: filter 0.15s, transform 0.1s;
     touch-action: manipulation;
+    position: relative;
   }
   .day-cell:active { filter: brightness(1.3); transform: scale(0.96); }
   .day-cell.empty  { background: transparent; cursor: default; }
@@ -172,9 +173,13 @@
     font-weight: 900;
   }
   
-  .turno-label {
-    font-size: 0px;
-  }
+ .turno-romano {
+  font-size: 16px !important;  /* !important forza il cambio */
+  font-weight: 700;
+  opacity: 0.7;
+  margin-top: 1px;
+  line-height: 1;
+}
   .badges {
     display: flex;
     gap: 2px;
@@ -314,6 +319,54 @@
     border: none;
     border-radius: 4px;
   }
+  
+  /* Toggle per numeri romani */
+  .toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 8px 0 4px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .toggle-group label {
+    margin: 0;
+    font-size: 12px;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: var(--cell);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .toggle-switch.active {
+    background: var(--verde);
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+  }
+  .toggle-switch.active::after {
+    transform: translateX(20px);
+  }
+
   .btn-reset-colors {
     background: var(--cell);
     color: var(--fg);
@@ -399,9 +452,10 @@
     .modal-overlay { align-items: center; }
     .day-cell { min-height: 80px; }
     .day-num  { font-size: 20px; }
+    .turno-romano { font-size: 10px; }
   }
 
-  /* ── MODALE PERSONALIZZAZIONE COLORI (larghezza piena su mobile) ── */
+  /* ── MODALE PERSONALIZZAZIONE COLORI ── */
   #modalColori .modal {
     max-width: 100%;
     width: 100%;
@@ -421,7 +475,6 @@
     height: 36px;
   }
 
-  /* Per schermi molto piccoli (iPhone SE) */
   @media (max-width: 380px) {
     #modalColori .color-picker-group {
       gap: 6px;
@@ -492,13 +545,13 @@
 <!-- LEGENDA -->
 <div class="legenda" id="legendaContainer">
   <div class="legenda-item" id="legendaMattino">
-    <div class="legenda-dot" id="dotMattino" style="background:#5B9BD5"></div>Mattino
+    <div class="legenda-dot" id="dotMattino" style="background:#5B9BD5"></div>Mattino I
   </div>
   <div class="legenda-item" id="legendaPomeriggio">
-    <div class="legenda-dot" id="dotPomeriggio" style="background:#2E8B57"></div>Pomeriggio
+    <div class="legenda-dot" id="dotPomeriggio" style="background:#2E8B57"></div>Pomeriggio II
   </div>
   <div class="legenda-item" id="legendaNotte">
-    <div class="legenda-dot" id="dotNotte" style="background:#1C1C6E"></div>Notte
+    <div class="legenda-dot" id="dotNotte" style="background:#1C1C6E"></div>Notte III
   </div>
   <div class="legenda-item" id="legendaRiposo">
     <div class="legenda-dot" id="dotRiposo" style="background:#6C757D"></div>Riposo
@@ -632,15 +685,15 @@
     
     <div class="color-picker-group">
       <div class="color-picker-item">
-        <label>🌅 Mattino</label>
+        <label>🌅 Mattino (I)</label>
         <input type="color" id="colorMattino" value="#5B9BD5">
       </div>
       <div class="color-picker-item">
-        <label>☀️ Pomeriggio</label>
+        <label>☀️ Pomeriggio (II)</label>
         <input type="color" id="colorPomeriggio" value="#2E8B57">
       </div>
       <div class="color-picker-item">
-        <label>🌙 Notte</label>
+        <label>🌙 Notte (III)</label>
         <input type="color" id="colorNotte" value="#1C1C6E">
       </div>
       <div class="color-picker-item">
@@ -655,6 +708,12 @@
         <label>🖼️ Sfondo</label>
         <input type="color" id="colorSfondo" value="#1A1A2E">
       </div>
+    </div>
+    
+    <!-- Toggle per numeri romani -->
+    <div class="toggle-group">
+      <label for="toggleRomani">📜 Mostra numeri romani</label>
+      <div class="toggle-switch" id="toggleRomani" onclick="toggleRomani()"></div>
     </div>
     
     <button class="btn-reset-colors" onclick="resetColoriDefault()">🔄 Ripristina colori originali</button>
@@ -837,6 +896,9 @@ const COLORI_DEFAULT = {
 // Colori personalizzati dell'utente
 let COLORI = { ...COLORI_DEFAULT };
 
+// Mostra numeri romani (default: true)
+let MOSTRA_ROMANI = true;
+
 function caricaColori() {
   const salvati = localStorage.getItem('turni_colori_personalizzati');
   if (salvati) {
@@ -849,10 +911,28 @@ function caricaColori() {
   } else {
     COLORI = { ...COLORI_DEFAULT };
   }
+  
+  // Carica preferenza numeri romani
+  const romani = localStorage.getItem('turni_mostra_romani');
+  if (romani !== null) {
+    MOSTRA_ROMANI = romani === 'true';
+  } else {
+    MOSTRA_ROMANI = true;
+  }
+  
+  // Aggiorna toggle
+  const toggle = document.getElementById('toggleRomani');
+  if (toggle) {
+    toggle.classList.toggle('active', MOSTRA_ROMANI);
+  }
 }
 
 function salvaColori() {
   localStorage.setItem('turni_colori_personalizzati', JSON.stringify(COLORI));
+}
+
+function salvaPreferenzaRomani() {
+  localStorage.setItem('turni_mostra_romani', String(MOSTRA_ROMANI));
 }
 
 function coloreTurno(turno) {
@@ -885,6 +965,30 @@ function aggiornaLegenda() {
 }
 
 // ══════════════════════════════════════════════
+//  FUNZIONI PER I NUMERI ROMANI
+// ══════════════════════════════════════════════
+
+function getNumeroRomano(turno) {
+  if (!turno) return '';
+  
+  // I = Mattino, II = Pomeriggio, III = Notte
+  if (turno.includes('MATTINO')) return 'I';
+  if (turno.includes('POMERIGGIO')) return 'II';
+  if (turno.includes('NOTTE')) return 'III';
+  if (turno.includes('RIPOSO')) return 'R';
+  
+  return '';
+}
+
+function toggleRomani() {
+  const toggle = document.getElementById('toggleRomani');
+  MOSTRA_ROMANI = !MOSTRA_ROMANI;
+  toggle.classList.toggle('active', MOSTRA_ROMANI);
+  salvaPreferenzaRomani();
+  creaCalendario(stato.mese, stato.anno);
+}
+
+// ══════════════════════════════════════════════
 //  FUNZIONI PER LA PERSONALIZZAZIONE
 // ══════════════════════════════════════════════
 
@@ -894,7 +998,12 @@ function apriPersonalizzazione() {
   document.getElementById('colorNotte').value = COLORI['NOTTE'] || COLORI_DEFAULT['NOTTE'];
   document.getElementById('colorRiposo').value = COLORI['RIPOSO'] || COLORI_DEFAULT['RIPOSO'];
   document.getElementById('colorNumeri').value = COLORI['NUMERI'] || COLORI_DEFAULT['NUMERI'];
-  document.getElementById('colorSfondo').value = COLORI['SFONDO'] || COLORI_DEFAULT['SFONDO']; 
+  document.getElementById('colorSfondo').value = COLORI['SFONDO'] || COLORI_DEFAULT['SFONDO'];
+  
+  // Aggiorna toggle
+  const toggle = document.getElementById('toggleRomani');
+  toggle.classList.toggle('active', MOSTRA_ROMANI);
+  
   apriModal('modalColori');
 }
 
@@ -943,8 +1052,6 @@ function resetColoriDefault() {
 function aggiornaSfondo() {
   const coloreSfondo = COLORI['SFONDO'] || COLORI_DEFAULT['SFONDO'];
   document.body.style.background = coloreSfondo;
-  
-  // Aggiorna anche le variabili CSS per gli elementi che ereditano lo sfondo
   document.documentElement.style.setProperty('--bg', coloreSfondo);
 }
 
@@ -1104,7 +1211,9 @@ function creaCalendario(mese, anno) {
     const isOggi = key === oggiStr;
     const isRiposo = turno.includes('RIPOSO');
     const coloreNumero = COLORI['NUMERI'] || '#FFFFFF';
-
+    
+    // Numero romano (I = Mattino, II = Pomeriggio, III = Notte)
+    const romano = MOSTRA_ROMANI ? getNumeroRomano(turno) : '';
     
     const cell = document.createElement('div');
     cell.className = 'day-cell' + (isOggi ? ' today' : '');
@@ -1112,6 +1221,7 @@ function creaCalendario(mese, anno) {
     cell.onclick = () => apriGiorno(anno, mese, g);
     cell.innerHTML = `
       <div class="day-num ${isRiposo ? 'riposo' : ''}" style="color: ${coloreNumero};">${g}</div>
+      ${romano ? `<div class="turno-romano" style="color: ${coloreNumero};">${romano}</div>` : ''}
       ${totaleBadge > 0 ? `<div class="badges">
         ${nProm > 0 ? '<span style="font-size:14px;">📌</span>' : ''}
         ${nNote > 0 ? '<span style="font-size:14px;">⭐️</span>' : ''}
@@ -1487,7 +1597,6 @@ function leggiImport(event) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      // Supporta sia il vecchio formato che il nuovo
       if (data.promemoria && data.note) {
         if (confirm(`Importare ${Object.keys(data.promemoria).length + Object.keys(data.note).length} voci? I dati attuali verranno uniti.`)) {
           Object.assign(stato.promemoria, data.promemoria);
@@ -1498,7 +1607,6 @@ function leggiImport(event) {
           Object.assign(stato.promemoria, data.promemoria);
         }
       } else {
-        // Vecchio formato: solo promemoria
         if (confirm(`Importare ${Object.keys(data).length} voci? I dati attuali verranno uniti.`)) {
           const norm = {};
           Object.entries(data).forEach(([key, val]) => {
