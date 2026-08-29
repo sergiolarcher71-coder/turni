@@ -173,13 +173,13 @@
     font-weight: 900;
   }
   
- .turno-romano {
-  font-size: 16px !important;  /* !important forza il cambio */
-  font-weight: 700;
-  opacity: 0.7;
-  margin-top: 1px;
-  line-height: 1;
-}
+  .turno-romano {
+    font-size: 16px !important;
+    font-weight: 700;
+    opacity: 0.7;
+    margin-top: 1px;
+    line-height: 1;
+  }
   .badges {
     display: flex;
     gap: 2px;
@@ -509,6 +509,8 @@
   .tab-btn.active-prom { background: var(--verde); color: white; }
   .tab-btn.active-note { background: var(--gold); color: #111; }
   .tab-btn.inactive { background: var(--cell); color: var(--fg-dim); }
+
+  .prom-completato { opacity: 0.5; text-decoration: line-through; }
 </style>
 </head>
 <body>
@@ -896,7 +898,7 @@ const COLORI_DEFAULT = {
 // Colori personalizzati dell'utente
 let COLORI = { ...COLORI_DEFAULT };
 
-// Mostra numeri romani (default: true)
+// Mostra numeri romani (default: false)
 let MOSTRA_ROMANI = false;
 
 function caricaColori() {
@@ -1305,11 +1307,13 @@ function aggiornaListaProm() {
   div.innerHTML = list.map((p, i) => {
     const ant   = p.anticipo || 0;
     const badge = ant > 0 ? `<div class="prom-badge">🔔 Ogni giorno per ${ant}gg prima</div>` : '';
-    return `<div class="prom-item" style="border-left:3px solid var(--verde);">
+    const completato = p.completato || false;
+    return `<div class="prom-item ${completato ? 'prom-completato' : ''}" style="border-left:3px solid ${completato ? 'var(--fg-dim)' : 'var(--verde)'};">
       <div style="flex:1">
         <div class="prom-text">${escHtml(p.testo)}</div>${badge}
       </div>
       <div class="prom-actions">
+        ${!completato ? `<button class="btn-sm" style="background:var(--verde);color:white" onclick="completaProm(${i})">✅</button>` : `<button class="btn-sm" style="background:var(--cell);color:white" onclick="ripristinaProm(${i})">↩️</button>`}
         <button class="btn-sm" style="background:var(--gold);color:#111" onclick="apriModificaProm(${i})">✏️</button>
         <button class="btn-sm" style="background:var(--accent);color:white" onclick="eliminaProm(${i})">🗑️</button>
       </div>
@@ -1369,14 +1373,17 @@ function setAnticipo(val) {
   });
 }
 
-document.querySelectorAll('#anticipoGroup .radio-btn').forEach(b => {
-  b.onclick = () => setAnticipo(parseInt(b.dataset.val));
-});
+// Event listener per i radio button
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('#anticipoGroup .radio-btn').forEach(b => {
+    b.onclick = () => setAnticipo(parseInt(b.dataset.val));
+  });
 
-document.getElementById('anticipoCustom').onchange = function() {
-  const v = parseInt(this.value);
-  if (!isNaN(v) && v >= 0) setAnticipo(v);
-};
+  document.getElementById('anticipoCustom').onchange = function() {
+    const v = parseInt(this.value);
+    if (!isNaN(v) && v >= 0) setAnticipo(v);
+  };
+});
 
 function salvaProm() {
   const testo = document.getElementById('promTesto').value.trim();
@@ -1387,6 +1394,7 @@ function salvaProm() {
   const entry = { testo, anticipo: stato.anticipoSelezionato, data_creazione: new Date().toISOString().slice(0,19).replace('T',' ') };
   if (stato.promEditIdx !== null) {
     stato.promemoria[key][stato.promEditIdx] = entry;
+    stato.promEditIdx = null; // Reset dopo il salvataggio
   } else {
     stato.promemoria[key].push(entry);
   }
@@ -1402,6 +1410,24 @@ function eliminaProm(idx) {
   const key = chiaveData(y, m, d);
   stato.promemoria[key].splice(idx, 1);
   if (stato.promemoria[key].length === 0) delete stato.promemoria[key];
+  salva();
+  aggiornaListaProm();
+  creaCalendario(stato.mese, stato.anno);
+}
+
+function completaProm(idx) {
+  const {y, m, d} = stato.giornoSelezionato;
+  const key = chiaveData(y, m, d);
+  stato.promemoria[key][idx].completato = true;
+  salva();
+  aggiornaListaProm();
+  creaCalendario(stato.mese, stato.anno);
+}
+
+function ripristinaProm(idx) {
+  const {y, m, d} = stato.giornoSelezionato;
+  const key = chiaveData(y, m, d);
+  stato.promemoria[key][idx].completato = false;
   salva();
   aggiornaListaProm();
   creaCalendario(stato.mese, stato.anno);
@@ -1437,6 +1463,7 @@ function salvaNota() {
   const entry = { testo, data_creazione: new Date().toISOString().slice(0,19).replace('T',' ') };
   if (stato.notaEditIdx !== null) {
     stato.note[key][stato.notaEditIdx] = entry;
+    stato.notaEditIdx = null; // Reset dopo il salvataggio
   } else {
     stato.note[key].push(entry);
   }
@@ -1461,6 +1488,19 @@ function eliminaNota(idx) {
 //  LISTA TUTTI PROMEMORIA E NOTE (con tab)
 // ══════════════════════════════════════════════
 
+function aggiornaTabs() {
+  const tabProm = document.getElementById('tabPromemoria');
+  const tabNote = document.getElementById('tabNote');
+  
+  if (stato.tabCorrente === 'promemoria') {
+    tabProm.className = 'tab-btn active-prom';
+    tabNote.className = 'tab-btn inactive';
+  } else {
+    tabNote.className = 'tab-btn active-note';
+    tabProm.className = 'tab-btn inactive';
+  }
+}
+
 function apriListaPromemoria() {
   stato.tabCorrente = 'promemoria';
   document.getElementById('searchInput').value = '';
@@ -1473,19 +1513,6 @@ function cambiaTab(tab) {
   stato.tabCorrente = tab;
   aggiornaTabs();
   filtraContenuti();
-}
-
-function aggiornaTabs() {
-  const tabProm = document.getElementById('tabPromemoria');
-  const tabNote = document.getElementById('tabNote');
-  
-  if (stato.tabCorrente === 'promemoria') {
-    tabProm.className = 'tab-btn active-prom';
-    tabNote.className = 'tab-btn inactive';
-  } else {
-    tabNote.className = 'tab-btn active-note';
-    tabProm.className = 'tab-btn inactive';
-  }
 }
 
 function filtraContenuti() {
@@ -1545,7 +1572,7 @@ function controllaAvvisi(mostraSempre = false) {
         if (visti.has(chiave)) return;
         const scatta = (ant === 0 && cur.getTime() === dataEvento.getTime()) ||
                        (ant > 0  && giorniMancanti >= 0 && giorniMancanti <= ant);
-        if (scatta) { avvisi.push({dataEvento, testo: p.testo, anticipo: ant, inRitardo: dataEvento < oggi}); visti.add(chiave); }
+        if (scatta && !p.completato) { avvisi.push({dataEvento, testo: p.testo, anticipo: ant, inRitardo: dataEvento < oggi}); visti.add(chiave); }
       });
     });
     cur = new Date(cur.getTime() + 86400000);
@@ -1577,7 +1604,9 @@ function controllaAvvisi(mostraSempre = false) {
 function esportaDati() {
   const data = {
     promemoria: stato.promemoria,
-    note: stato.note
+    note: stato.note,
+    colori: COLORI,
+    mostraRomani: MOSTRA_ROMANI
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   const url  = URL.createObjectURL(blob);
@@ -1597,14 +1626,26 @@ function leggiImport(event) {
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
+      
+      // Importa promemoria e note
       if (data.promemoria && data.note) {
         if (confirm(`Importare ${Object.keys(data.promemoria).length + Object.keys(data.note).length} voci? I dati attuali verranno uniti.`)) {
-          Object.assign(stato.promemoria, data.promemoria);
-          Object.assign(stato.note, data.note);
+          // Merge profondo per evitare sovrascritture
+          Object.entries(data.promemoria).forEach(([key, val]) => {
+            if (!stato.promemoria[key]) stato.promemoria[key] = [];
+            stato.promemoria[key] = [...stato.promemoria[key], ...val];
+          });
+          Object.entries(data.note).forEach(([key, val]) => {
+            if (!stato.note[key]) stato.note[key] = [];
+            stato.note[key] = [...stato.note[key], ...val];
+          });
         }
       } else if (data.promemoria) {
         if (confirm(`Importare ${Object.keys(data.promemoria).length} promemoria? I dati attuali verranno uniti.`)) {
-          Object.assign(stato.promemoria, data.promemoria);
+          Object.entries(data.promemoria).forEach(([key, val]) => {
+            if (!stato.promemoria[key]) stato.promemoria[key] = [];
+            stato.promemoria[key] = [...stato.promemoria[key], ...val];
+          });
         }
       } else {
         if (confirm(`Importare ${Object.keys(data).length} voci? I dati attuali verranno uniti.`)) {
@@ -1613,13 +1654,35 @@ function leggiImport(event) {
             const [y, m, d] = key.split('-').map(Number);
             norm[`${y}-${m}-${d}`] = val;
           });
-          Object.assign(stato.promemoria, norm);
+          Object.entries(norm).forEach(([key, val]) => {
+            if (!stato.promemoria[key]) stato.promemoria[key] = [];
+            stato.promemoria[key] = [...stato.promemoria[key], ...val];
+          });
         }
       }
+      
+      // Importa colori se presenti
+      if (data.colori) {
+        if (confirm('Importare anche le impostazioni di colore?')) {
+          COLORI = { ...COLORI_DEFAULT, ...data.colori };
+          salvaColori();
+          if (data.mostraRomani !== undefined) {
+            MOSTRA_ROMANI = data.mostraRomani;
+            salvaPreferenzaRomani();
+            const toggle = document.getElementById('toggleRomani');
+            if (toggle) toggle.classList.toggle('active', MOSTRA_ROMANI);
+          }
+          aggiornaSfondo();
+          aggiornaLegenda();
+        }
+      }
+      
       salva();
       creaCalendario(stato.mese, stato.anno);
       alert('✅ Dati importati con successo!');
-    } catch(err) { alert('❌ File non valido.'); }
+    } catch(err) {
+      alert('❌ File non valido: ' + err.message);
+    }
   };
   reader.readAsText(file);
   event.target.value = '';
@@ -1632,6 +1695,7 @@ function apriModal(id)  { document.getElementById(id).classList.add('open'); }
 function chiudiModal(id){ document.getElementById(id).classList.remove('open'); }
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// Chiusura modali cliccando sull'overlay
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 });
