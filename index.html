@@ -623,6 +623,18 @@
     <div class="modal-title" id="notaModalTitolo">⭐️ Nuova Nota</div>
     <label>Testo</label>
     <textarea id="notaTesto" rows="4" placeholder="Scrivi la tua nota..."></textarea>
+    <label>Emoji</label>
+    <input type="text" id="notaEmoji" placeholder="Tocca e scegli una emoji" style="font-size:24px;text-align:center;">
+    <div class="radio-group">
+      <div class="radio-btn" style="font-size:20px" onclick="document.getElementById('notaEmoji').value='⭐️'">⭐️</div>
+      <div class="radio-btn" style="font-size:20px" onclick="document.getElementById('notaEmoji').value='❗'">❗</div>
+      <div class="radio-btn" style="font-size:20px" onclick="document.getElementById('notaEmoji').value='🏥'">🏥</div>
+      <div class="radio-btn" style="font-size:20px" onclick="document.getElementById('notaEmoji').value='🏖️'">🏖️</div>
+      <div class="radio-btn" style="font-size:20px" onclick="document.getElementById('notaEmoji').value='🎂'">🎂</div>
+      <div class="radio-btn" style="font-size:20px" onclick="document.getElementById('notaEmoji').value='💰'">💰</div>
+      <div class="radio-btn" style="font-size:20px" onclick="document.getElementById('notaEmoji').value='🔧'">🔧</div>
+      <div class="radio-btn" style="font-size:20px" onclick="document.getElementById('notaEmoji').value='🔄'">🔄</div>
+    </div>
     <button class="btn btn-verde" onclick="salvaNota()">💾 Salva Nota</button>
     <button class="btn btn-accent" onclick="chiudiModal('modalNota')" style="margin-top:6px">Annulla</button>
   </div>
@@ -1209,6 +1221,7 @@ function creaCalendario(mese, anno) {
     const key    = chiaveData(anno, mese, g);
     const nProm  = (stato.promemoria[key] || []).length;
     const nNote  = (stato.note[key] || []).length;
+    const emojiNote = [...new Set((stato.note[key] || []).map(n => n.emoji || '⭐️'))].slice(0,3).join('');
     const totaleBadge = nProm + nNote;
     const isOggi = key === oggiStr;
     const isRiposo = turno.includes('RIPOSO');
@@ -1226,7 +1239,7 @@ function creaCalendario(mese, anno) {
       ${romano ? `<div class="turno-romano" style="color: ${coloreNumero};">${romano}</div>` : ''}
       ${totaleBadge > 0 ? `<div class="badges">
         ${nProm > 0 ? '<span style="font-size:14px;">📌</span>' : ''}
-        ${nNote > 0 ? '<span style="font-size:14px;">⭐️</span>' : ''}
+        ${nNote > 0 ? `<span style="font-size:14px;">${emojiNote}</span>` : ''}
       </div>` : ''}
     `;
     grid.appendChild(cell);
@@ -1333,7 +1346,7 @@ function aggiornaListaNote() {
   div.innerHTML = list.map((p, i) => {
     return `<div class="prom-item" style="border-left:3px solid var(--gold);">
       <div style="flex:1">
-        <div class="prom-text" style="font-size:13px;">${escHtml(p.testo)}</div>
+        <div class="prom-text" style="font-size:13px;">${p.emoji || '⭐️'} ${escHtml(p.testo)}</div>
       </div>
       <div class="prom-actions">
         <button class="btn-sm" style="background:var(--gold);color:#111;font-size:11px;" onclick="apriModificaNota(${i})">✏️</button>
@@ -1440,6 +1453,7 @@ function apriNuovaNota() {
   stato.notaEditIdx = null;
   document.getElementById('notaModalTitolo').textContent = '⭐️ Nuova Nota';
   document.getElementById('notaTesto').value = '';
+  document.getElementById('notaEmoji').value = '⭐️';
   apriModal('modalNota');
 }
 
@@ -1451,7 +1465,17 @@ function apriModificaNota(idx) {
   stato.notaEditIdx = idx;
   document.getElementById('notaModalTitolo').textContent = '✏️ Modifica Nota';
   document.getElementById('notaTesto').value = p.testo;
+  document.getElementById('notaEmoji').value = p.emoji || '⭐️';
   apriModal('modalNota');
+}
+
+function primaEmoji(s) {
+  s = (s || '').trim();
+  if (!s) return '⭐️';
+  if (window.Intl && Intl.Segmenter) {
+    return [...new Intl.Segmenter().segment(s)][0].segment;
+  }
+  return Array.from(s)[0];
 }
 
 function salvaNota() {
@@ -1460,7 +1484,7 @@ function salvaNota() {
   const {y, m, d} = stato.giornoSelezionato;
   const key = chiaveData(y, m, d);
   if (!stato.note[key]) stato.note[key] = [];
-  const entry = { testo, data_creazione: new Date().toISOString().slice(0,19).replace('T',' ') };
+  const entry = { testo, emoji: primaEmoji(document.getElementById('notaEmoji').value), data_creazione: new Date().toISOString().slice(0,19).replace('T',' ') };
   if (stato.notaEditIdx !== null) {
     stato.note[key][stato.notaEditIdx] = entry;
     stato.notaEditIdx = null; // Reset dopo il salvataggio
@@ -1541,7 +1565,7 @@ function filtraContenuti() {
       const ant = p.anticipo || 0;
       const badge = ant > 0 ? `<div class="prom-badge">🔔 ${ant}gg prima</div>` : '';
       html += `<div class="prom-item"><div style="flex:1">
-        <div style="font-size:11px;color:var(--fg-dim);margin-bottom:3px">${emoji} ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}</div>
+        <div style="font-size:11px;color:var(--fg-dim);margin-bottom:3px">${stato.tabCorrente === 'promemoria' ? '📌' : (p.emoji || '⭐️')} ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}</div>
         <div class="prom-text">${escHtml(p.testo)}</div>
         ${badge}
       </div></div>`;
